@@ -23,7 +23,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    runtimeOnly 'com.h2database:h2'
+
+    // MySQL (개발·테스트·운영 전부 MySQL 사용)
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
