@@ -1,0 +1,66 @@
+.start-screen {
+  width: 100vw;
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #1f1f1f;
+  color: white;
+
+  text-align: center;
+}
+
+.start-content {
+  width: min(90%, 600px);
+}
+
+.start-label {
+  margin-bottom: 25px;
+
+  font-size: 14px;
+  letter-spacing: 4px;
+
+  color: #d8c875;
+}
+
+.start-content h1 {
+  margin: 0;
+
+  font-size: 48px;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.start-description {
+  margin-top: 25px;
+
+  color: #999;
+
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.start-button {
+  width: 280px;
+
+  margin-top: 50px;
+  padding: 18px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #d8c875;
+  color: #1f1f1f;
+
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+
+  cursor: pointer;
+}
+
+.start-button:hover {
+  opacity: 0.85;
+}

@@ -1,0 +1,184 @@
+* {
+  box-sizing: border-box;
+}
+
+.main-screen {
+  width: 100vw;
+  min-height: 100vh;
+
+  padding: 40px;
+
+  background: #1f1f1f;
+  color: white;
+
+  font-family: Arial, sans-serif;
+}
+
+
+/* 제목 */
+
+.main-screen h1 {
+  margin: 0 0 30px;
+
+  font-size: 28px;
+  letter-spacing: 3px;
+}
+
+
+/* 마네킹 영역 */
+
+.mannequin-box {
+  width: 100%;
+  height: 450px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-top: 1px solid #444;
+  border-bottom: 1px solid #444;
+}
+
+
+/* 임시 마네킹 */
+
+.mannequin {
+  position: relative;
+
+  width: 180px;
+  height: 360px;
+}
+
+
+/* 머리 */
+
+.head {
+  position: absolute;
+
+  top: 0;
+  left: 50%;
+
+  width: 70px;
+  height: 70px;
+
+  transform: translateX(-50%);
+
+  border-radius: 50%;
+
+  background: #ccc;
+}
+
+
+/* 몸 */
+
+.body {
+  position: absolute;
+
+  top: 80px;
+  left: 35px;
+
+  width: 110px;
+  height: 140px;
+
+  border-radius: 30px 30px 15px 15px;
+
+  background: #777;
+}
+
+
+/* 다리 */
+
+.leg {
+  position: absolute;
+
+  top: 210px;
+
+  width: 50px;
+  height: 145px;
+
+  background: #444;
+
+  border-radius: 0 0 15px 15px;
+}
+
+.left-leg {
+  left: 38px;
+}
+
+.right-leg {
+  right: 38px;
+}
+
+
+/* LOOK */
+
+.looks {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 12px;
+
+  margin: 25px 0;
+}
+
+.looks button {
+  padding: 15px;
+
+  border: 1px solid #555;
+  border-radius: 10px;
+
+  background: #292929;
+  color: white;
+
+  cursor: pointer;
+}
+
+.looks button:hover {
+  border-color: #d8c875;
+}
+
+
+/* 상품 정보 */
+
+.items {
+  border-top: 1px solid #444;
+}
+
+.items div {
+  display: flex;
+  justify-content: space-between;
+
+  padding: 13px 0;
+
+  border-bottom: 1px solid #333;
+}
+
+.items span {
+  color: #999;
+}
+
+.items strong {
+  font-weight: normal;
+}
+
+
+/* 저장 */
+
+.save-button {
+  width: 100%;
+
+  margin-top: 25px;
+  padding: 18px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #d8c875;
+  color: #1f1f1f;
+
+  font-size: 16px;
+  font-weight: bold;
+
+  cursor: pointer;
+}

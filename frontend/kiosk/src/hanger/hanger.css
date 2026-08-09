@@ -1,0 +1,112 @@
+.hanger-screen {
+  width: 100vw;
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #1f1f1f;
+  color: white;
+
+  text-align: center;
+}
+
+.hanger-content {
+  width: min(90%, 600px);
+}
+
+.hanger-label {
+  color: #d8c875;
+
+  font-size: 13px;
+  letter-spacing: 4px;
+}
+
+.hanger-content h1 {
+  margin-top: 20px;
+
+  font-size: 40px;
+  font-weight: 500;
+}
+
+.hanger-description {
+  color: #999;
+
+  font-size: 15px;
+}
+
+
+/* 센서 */
+
+.hanger-sensor {
+  width: 240px;
+  height: 240px;
+
+  margin: 60px auto;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  border: 1px solid #444;
+  border-radius: 50%;
+}
+
+.sensor-circle {
+  width: 90px;
+  height: 90px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border: 1px solid #d8c875;
+  border-radius: 50%;
+}
+
+.sensor-inner {
+  width: 45px;
+  height: 45px;
+
+  border-radius: 50%;
+
+  background: #d8c875;
+
+  box-shadow: 0 0 30px rgba(216, 200, 117, 0.5);
+}
+
+.hanger-sensor p {
+  margin-top: 20px;
+
+  font-size: 10px;
+  letter-spacing: 2px;
+
+  color: #888;
+}
+
+
+/* 상태 */
+
+.hanger-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  gap: 8px;
+
+  font-size: 11px;
+  letter-spacing: 1px;
+
+  color: #888;
+}
+
+.hanger-status span {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #d8c875;
+}
