@@ -1,184 +1,805 @@
+/* =========================================
+   RESET
+========================================= */
+
 * {
   box-sizing: border-box;
 }
 
-.main-screen {
-  width: 100vw;
-  min-height: 100vh;
-
-  padding: 40px;
-
-  background: #1f1f1f;
-  color: white;
-
-  font-family: Arial, sans-serif;
-}
-
-
-/* 제목 */
-
-.main-screen h1 {
-  margin: 0 0 30px;
-
-  font-size: 28px;
-  letter-spacing: 3px;
-}
-
-
-/* 마네킹 영역 */
-
-.mannequin-box {
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
   width: 100%;
-  height: 450px;
+  height: 100%;
+}
+
+button {
+  font-family: inherit;
+}
+
+
+/* =========================================
+   KIOSK SCREEN
+   9 : 16
+========================================= */
+
+.mannequin-screen {
+  width: 100vw;
+  height: 100vh;
+
+  width: min(100vw, 56.25vh);
+
+  margin: 0 auto;
+
+  overflow: hidden;
+
+  background: #f7f5f0;
+
+  color: #292722;
+
+  font-family:
+    Arial,
+    "Noto Sans KR",
+    sans-serif;
 
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.mannequin-header {
+  flex: 0 0 10%;
+
+  padding: 18px 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  border-bottom: 1px solid #e5e0d7;
+}
+
+.brand-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  margin: 0 0 4px;
+
+  color: #b89b61;
+
+  font-size: 8px;
+
+  letter-spacing: 2px;
+}
+
+.mannequin-header h1 {
+  margin: 0;
+
+  font-size: 20px;
+
+  font-weight: 600;
+
+  letter-spacing: -0.5px;
+}
+
+.live-status {
+  display: flex;
   align-items: center;
 
-  border-top: 1px solid #444;
-  border-bottom: 1px solid #444;
+  gap: 5px;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  background: #ffffff;
+
+  color: #a2834d;
+
+  font-size: 8px;
 }
 
-
-/* 임시 마네킹 */
-
-.mannequin {
-  position: relative;
-
-  width: 180px;
-  height: 360px;
-}
-
-
-/* 머리 */
-
-.head {
-  position: absolute;
-
-  top: 0;
-  left: 50%;
-
-  width: 70px;
-  height: 70px;
-
-  transform: translateX(-50%);
+.live-status span {
+  width: 6px;
+  height: 6px;
 
   border-radius: 50%;
 
-  background: #ccc;
+  background: #d6a52e;
+
+  animation: livePulse 1.5s infinite;
+}
+
+@keyframes livePulse {
+
+  0% {
+    box-shadow:
+      0 0 0 0
+      rgba(214, 165, 46, 0.5);
+  }
+
+  70% {
+    box-shadow:
+      0 0 0 6px
+      rgba(214, 165, 46, 0);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0
+      rgba(214, 165, 46, 0);
+  }
 }
 
 
-/* 몸 */
+/* =========================================
+   MAIN AREA
+========================================= */
 
-.body {
+.mannequin-main {
+  flex: 0 0 51%;
+
+  min-height: 0;
+
+  display: flex;
+
+  gap: 8px;
+
+  padding: 10px 12px;
+}
+
+
+/* =========================================
+   MANNEQUIN VIEW
+========================================= */
+
+.mannequin-view {
+  position: relative;
+
+  width: 72%;
+
+  overflow: hidden;
+
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f1ede6 100%
+    );
+}
+
+.view-label {
   position: absolute;
 
-  top: 80px;
-  left: 35px;
+  top: 12px;
+  left: 13px;
 
-  width: 110px;
-  height: 140px;
+  z-index: 5;
 
-  border-radius: 30px 30px 15px 15px;
+  font-size: 6px;
 
-  background: #777;
+  color: #a38b64;
+
+  letter-spacing: 1.5px;
 }
 
 
-/* 다리 */
+/* =========================================
+   MANNEQUIN STAGE
+========================================= */
 
-.leg {
+.mannequin-stage {
   position: absolute;
 
-  top: 210px;
+  inset: 0;
 
-  width: 50px;
-  height: 145px;
+  display: flex;
 
-  background: #444;
+  justify-content: center;
 
-  border-radius: 0 0 15px 15px;
-}
-
-.left-leg {
-  left: 38px;
-}
-
-.right-leg {
-  right: 38px;
+  align-items: center;
 }
 
 
-/* LOOK */
+/* =========================================
+   2D MANNEQUIN
+========================================= */
 
-.looks {
-  display: grid;
+.mannequin-character {
+  position: relative;
 
-  grid-template-columns: repeat(4, 1fr);
+  width: 70%;
+  height: 82%;
 
-  gap: 12px;
+  display: flex;
 
-  margin: 25px 0;
+  justify-content: center;
+  align-items: center;
+
+  animation:
+    mannequinWalk
+    1.8s
+    ease-in-out
+    infinite;
+
+  transform-origin: center bottom;
 }
 
-.looks button {
-  padding: 15px;
+.mannequin-body-image {
+  width: 100%;
+  height: 100%;
 
-  border: 1px solid #555;
+  object-fit: contain;
+
+  display: block;
+
+  user-select: none;
+
+  pointer-events: none;
+
+  filter:
+    drop-shadow(
+      0 8px 14px
+      rgba(80, 70, 60, 0.08)
+    );
+}
+
+
+/* =========================================
+   2D WALKING ANIMATION
+========================================= */
+
+@keyframes mannequinWalk {
+
+  0% {
+    transform:
+      translateX(-3px)
+      translateY(0)
+      rotate(-1deg);
+  }
+
+  25% {
+    transform:
+      translateX(0)
+      translateY(-4px)
+      rotate(1deg);
+  }
+
+  50% {
+    transform:
+      translateX(3px)
+      translateY(0)
+      rotate(-1deg);
+  }
+
+  75% {
+    transform:
+      translateX(0)
+      translateY(-4px)
+      rotate(1deg);
+  }
+
+  100% {
+    transform:
+      translateX(-3px)
+      translateY(0)
+      rotate(-1deg);
+  }
+}
+
+
+/* =========================================
+   MANNEQUIN SHADOW
+========================================= */
+
+.character-shadow {
+  position: absolute;
+
+  bottom: 7%;
+
+  left: 50%;
+
+  width: 60%;
+  height: 8%;
+
+  transform:
+    translateX(-50%);
+
+  border-radius: 50%;
+
+  background:
+    rgba(80, 70, 60, 0.1);
+
+  filter: blur(5px);
+
+  z-index: 0;
+}
+
+
+/* =========================================
+   AI STATUS
+========================================= */
+
+.ai-status {
+  position: absolute;
+
+  left: 9px;
+  right: 9px;
+  bottom: 9px;
+
+  z-index: 10;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 8px;
+
   border-radius: 10px;
 
-  background: #292929;
-  color: white;
+  background:
+    rgba(255, 255, 255, 0.9);
 
-  cursor: pointer;
+  backdrop-filter: blur(8px);
 }
 
-.looks button:hover {
-  border-color: #d8c875;
+.ai-status > span {
+  width: 6px;
+  height: 6px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #d5a426;
 }
 
+.ai-status strong {
+  display: block;
 
-/* 상품 정보 */
+  font-size: 7px;
 
-.items {
-  border-top: 1px solid #444;
+  color: #816d4d;
 }
 
-.items div {
-  display: flex;
-  justify-content: space-between;
+.ai-status p {
+  margin: 3px 0 0;
 
-  padding: 13px 0;
+  font-size: 5px;
 
-  border-bottom: 1px solid #333;
-}
-
-.items span {
   color: #999;
 }
 
-.items strong {
-  font-weight: normal;
+
+/* =========================================
+   LOOK PANEL
+========================================= */
+
+.look-panel {
+  width: 28%;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.look-title {
+  padding: 3px;
+}
+
+.look-title span {
+  display: block;
+
+  font-size: 5px;
+
+  color: #a18a64;
+
+  letter-spacing: 1px;
+}
+
+.look-title strong {
+  font-size: 12px;
 }
 
 
-/* 저장 */
+/* =========================================
+   LOOK LIST
+========================================= */
 
-.save-button {
+.look-list {
+  flex: 1;
+
+  min-height: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+
+/* =========================================
+   LOOK CARD
+========================================= */
+
+.look-card {
+  flex: 1;
+
+  min-height: 0;
+
   width: 100%;
 
-  margin-top: 25px;
-  padding: 18px;
+  padding: 4px;
 
-  border: none;
-  border-radius: 12px;
+  border:
+    1px solid
+    transparent;
 
-  background: #d8c875;
-  color: #1f1f1f;
+  border-radius: 8px;
 
-  font-size: 16px;
-  font-weight: bold;
+  background: #ffffff;
 
   cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.look-card:hover {
+  transform: translateY(-1px);
+}
+
+.look-card.active {
+  border-color: #d9ac36;
+
+  box-shadow:
+    0 3px 10px
+    rgba(210, 165, 50, 0.15);
+}
+
+.look-number {
+  font-size: 6px;
+
+  color: #a58d67;
+
+  text-align: left;
+}
+
+
+/* =========================================
+   LOOK PREVIEW
+========================================= */
+
+.look-preview {
+  position: relative;
+
+  height: 65%;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  background: #f0ece5;
+
+  border-radius: 5px;
+
+  overflow: hidden;
+}
+
+.mini-head {
+  position: absolute;
+
+  top: 8%;
+
+  width: 20%;
+
+  aspect-ratio: 1;
+
+  border-radius: 50%;
+
+  background: #d1cbc1;
+}
+
+.mini-body {
+  position: absolute;
+
+  top: 25%;
+
+  width: 38%;
+  height: 58%;
+
+  border-radius:
+    10px
+    10px
+    6px
+    6px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ddd8cf,
+      #a9a39a
+    );
+}
+
+
+/* LOOK별 미리보기 */
+
+.look-card:nth-child(1) .mini-body {
+  background:
+    linear-gradient(
+      180deg,
+      #4a4a48,
+      #66635e
+    );
+}
+
+.look-card:nth-child(2) .mini-body {
+  background:
+    linear-gradient(
+      180deg,
+      #eeeae2,
+      #bcb7ae
+    );
+}
+
+.look-card:nth-child(3) .mini-body {
+  background:
+    linear-gradient(
+      180deg,
+      #9b7960,
+      #607083
+    );
+}
+
+.look-card:nth-child(4) .mini-body {
+  background:
+    linear-gradient(
+      180deg,
+      #292929,
+      #444444
+    );
+}
+
+.look-card > span {
+  display: block;
+
+  margin-top: 3px;
+
+  font-size: 6px;
+
+  color: #555;
+}
+
+
+/* =========================================
+   PRODUCT SECTION
+========================================= */
+
+.product-section {
+  flex: 0 0 31%;
+
+  min-height: 0;
+
+  margin: 0 12px;
+
+  padding: 9px 11px;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+}
+
+
+/* =========================================
+   PRODUCT HEADER
+========================================= */
+
+.product-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  padding-bottom: 6px;
+
+  border-bottom:
+    1px solid
+    #eeeae4;
+}
+
+.product-header div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+}
+
+.product-header span {
+  font-size: 5px;
+
+  color: #a28c69;
+}
+
+.product-header strong {
+  font-size: 9px;
+}
+
+
+/* =========================================
+   PRODUCT LIST
+========================================= */
+
+.product-list {
+  margin-top: 3px;
+}
+
+.product-row {
+  height: 18px;
+
+  display: grid;
+
+  grid-template-columns: 20% 1fr;
+
+  align-items: center;
+
+  border-bottom:
+    1px solid
+    #f0ede8;
+}
+
+.product-row span {
+  font-size: 6px;
+
+  color: #a18b69;
+}
+
+.product-row strong {
+  font-size: 7px;
+
+  font-weight: 500;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================
+   TOTAL PRICE
+========================================= */
+
+.total-price {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-top: 7px;
+}
+
+.total-price span {
+  font-size: 7px;
+
+  color: #777;
+}
+
+.total-price strong {
+  font-size: 13px;
+
+  color: #292722;
+}
+
+
+/* =========================================
+   SAVE BUTTON
+========================================= */
+
+.save-button {
+  flex: 0 0 7%;
+
+  margin:
+    7px
+    12px
+    10px;
+
+  border: none;
+
+  border-radius: 11px;
+
+  background: #d9ae38;
+
+  color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    0.2s ease;
+}
+
+.save-button:hover {
+  background: #c99e2d;
+
+  transform:
+    translateY(-1px);
+}
+
+.save-button:active {
+  transform:
+    translateY(0);
+}
+
+.save-button span {
+  margin-right: 5px;
+}
+
+
+/* =========================================
+   SMALL SCREEN
+========================================= */
+
+@media (max-height: 700px) {
+
+  .mannequin-header {
+    padding:
+      12px
+      15px;
+  }
+
+  .mannequin-header h1 {
+    font-size: 17px;
+  }
+
+  .mannequin-main {
+    padding:
+      7px
+      9px;
+  }
+
+  .product-section {
+    margin:
+      0
+      9px;
+
+    padding:
+      7px
+      9px;
+  }
+
+  .save-button {
+    margin:
+      5px
+      9px
+      7px;
+  }
 }
