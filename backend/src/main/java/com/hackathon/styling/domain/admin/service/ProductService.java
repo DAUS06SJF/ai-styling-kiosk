@@ -5,11 +5,15 @@ import com.hackathon.styling.domain.admin.dto.ProductCreateRequest;
 import com.hackathon.styling.domain.admin.dto.ProductResponse;
 import com.hackathon.styling.domain.admin.dto.ProductUpdateRequest;
 import com.hackathon.styling.domain.admin.repository.ProductRepository;
+import com.hackathon.styling.global.common.PageResponse;
+import com.hackathon.styling.global.error.BusinessException;
+import com.hackathon.styling.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -21,21 +25,20 @@ public class ProductService {
     // 상품 등록
     @Transactional
     public ProductResponse create(ProductCreateRequest request) {
+        String hangerCode = normalizeRequired(request.getHangerCode());
 
-        if (productRepository.existsByHangerCode(request.getHangerCode())) {
-            throw new IllegalArgumentException("이미 등록된 옷걸이 코드입니다.");
-        }
+        validateUniqueHangerCode(hangerCode, null);
 
         Product product = new Product(
-                request.getName(),
-                request.getCategory(),
-                request.getColor(),
-                request.getSize(),
+                normalizeRequired(request.getName()),
+                normalizeRequired(request.getCategory()),
+                normalizeRequired(request.getColor()),
+                normalizeRequired(request.getSize()),
                 request.getPrice(),
-                request.getDescription(),
-                request.getImageUrl(),
+                normalizeOptional(request.getDescription()),
+                normalizeOptional(request.getImageUrl()),
                 request.getStock(),
-                request.getHangerCode()
+                hangerCode
         );
 
         Product savedProduct = productRepository.save(product);
@@ -43,51 +46,38 @@ public class ProductService {
         return ProductResponse.from(savedProduct);
     }
 
-    // 상품 전체 조회
-    public List<ProductResponse> findAll() {
-
-        return productRepository.findAll()
-                .stream()
-                .map(ProductResponse::from)
-                .toList();
+    // 상품 목록 조회
+    public PageResponse<ProductResponse> findAll(String keyword, String category, Pageable pageable) {
+        return PageResponse.from(
+                productRepository.search(normalizeOptional(keyword), normalizeOptional(category), pageable)
+                        .map(ProductResponse::from)
+        );
     }
 
     // 상품 단건 조회
     public ProductResponse findById(Long id) {
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 상품입니다. id=" + id)
-                );
-
-        return ProductResponse.from(product);
+        return ProductResponse.from(findProduct(id));
     }
 
     // 상품 수정
     @Transactional
     public ProductResponse update(Long id, ProductUpdateRequest request) {
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 상품입니다. id=" + id)
-                );
-
-        if (!product.getHangerCode().equals(request.getHangerCode())
-                && productRepository.existsByHangerCode(request.getHangerCode())) {
-
-            throw new IllegalArgumentException("이미 등록된 옷걸이 코드입니다.");
-        }
+        Product product = findProduct(id);
+        String hangerCode = normalizeRequired(request.getHangerCode());
+        validateUniqueHangerCode(hangerCode, product.getId());
 
         product.update(
-                request.getName(),
-                request.getCategory(),
-                request.getColor(),
-                request.getSize(),
+                normalizeRequired(request.getName()),
+                normalizeRequired(request.getCategory()),
+                normalizeRequired(request.getColor()),
+                normalizeRequired(request.getSize()),
                 request.getPrice(),
-                request.getDescription(),
-                request.getImageUrl(),
+                normalizeOptional(request.getDescription()),
+                normalizeOptional(request.getImageUrl()),
                 request.getStock(),
-                request.getHangerCode()
+                hangerCode
         );
 
         return ProductResponse.from(product);
@@ -97,11 +87,33 @@ public class ProductService {
     @Transactional
     public void delete(Long id) {
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 상품입니다. id=" + id)
-                );
+        productRepository.delete(findProduct(id));
+    }
 
-        productRepository.delete(product);
+    private Product findProduct(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.PRODUCT_NOT_FOUND,
+                        "상품 정보를 찾을 수 없습니다. id=" + id
+                ));
+    }
+
+    private void validateUniqueHangerCode(String hangerCode, Long currentProductId) {
+        productRepository.findByHangerCodeIgnoreCase(hangerCode)
+                .filter(product -> !Objects.equals(product.getId(), currentProductId))
+                .ifPresent(product -> {
+                    throw new BusinessException(ErrorCode.DUPLICATE_HANGER_CODE);
+                });
+    }
+
+    private String normalizeRequired(String value) {
+        return value.trim();
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }
