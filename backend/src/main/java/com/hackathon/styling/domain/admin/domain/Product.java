@@ -17,19 +17,19 @@ public class Product {
     private Long id;
 
     // 상품명
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     // 상품 카테고리
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String category;
 
     // 색상
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String color;
 
     // 사이즈
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private String size;
 
     // 가격
@@ -41,6 +41,7 @@ public class Product {
     private String description;
 
     // 상품 이미지 URL
+    @Column(length = 1000)
     private String imageUrl;
 
     // 재고
@@ -48,7 +49,7 @@ public class Product {
     private Integer stock;
 
     // 옷걸이 식별 코드
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String hangerCode;
 
     // 생성 시간
