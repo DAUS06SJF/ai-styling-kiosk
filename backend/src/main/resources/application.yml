@@ -16,6 +16,15 @@ spring:
       hibernate:
         format_sql: true
     open-in-view: false
+    # data.sql 을 테이블 생성 이후에 실행시키기 위해 필요
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      # data.sql 의 MCM 상품 시드 데이터를 매 기동 시 적재 (INSERT IGNORE 라 중복 없음)
+      mode: always
+      # 지정하지 않으면 Windows 기본 인코딩(CP949)으로 읽어 한글이 깨진다
+      encoding: UTF-8
 
   jackson:
     default-property-inclusion: non_null
