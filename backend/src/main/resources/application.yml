@@ -42,6 +42,16 @@ server:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175}
 
+# OpenAI Responses API. 키는 반드시 환경변수로만 주입한다.
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-5.6-luna}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+  connect-timeout: ${OPENAI_CONNECT_TIMEOUT:3s}
+  read-timeout: ${OPENAI_READ_TIMEOUT:30s}
+  candidate-limit: ${OPENAI_CANDIDATE_LIMIT:24}
+  recommendation-count: ${OPENAI_RECOMMENDATION_COUNT:3}
+
 logging:
   level:
     org.hibernate.SQL: debug

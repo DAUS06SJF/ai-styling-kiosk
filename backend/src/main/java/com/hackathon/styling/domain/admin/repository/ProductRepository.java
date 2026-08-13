@@ -7,11 +7,23 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findByHangerCodeIgnoreCase(String hangerCode);
+
+    @Query("""
+            SELECT p FROM Product p
+            WHERE p.stock > 0
+              AND p.id <> :excludedProductId
+            ORDER BY p.stock DESC, p.id ASC
+            """)
+    List<Product> findAvailableForStyling(
+            @Param("excludedProductId") Long excludedProductId,
+            Pageable pageable
+    );
 
     @Query("""
             SELECT p FROM Product p

@@ -20,6 +20,8 @@ public enum ErrorCode {
 
     // 스타일링 (이승원)
     STYLING_NOT_FOUND(HttpStatus.NOT_FOUND, "스타일링 정보를 찾을 수 없습니다."),
+    STYLING_CANDIDATE_NOT_FOUND(HttpStatus.UNPROCESSABLE_ENTITY, "추천할 수 있는 재고 상품이 없습니다."),
+    OPENAI_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "OpenAI API 키가 설정되지 않았습니다."),
     STYLING_GENERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 스타일링 생성에 실패했습니다."),
 
     // 상품 / 재고 / 센서 (서의진)
