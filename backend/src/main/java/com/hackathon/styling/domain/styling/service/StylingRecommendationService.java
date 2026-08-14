@@ -115,6 +115,14 @@ public class StylingRecommendationService {
         return StylingRecommendationResponse.from(styling);
     }
 
+    @Transactional
+    public StylingRecommendationResponse select(Long id) {
+        StylingRecommendation styling = stylingRecommendationRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STYLING_NOT_FOUND));
+        styling.select();
+        return StylingRecommendationResponse.from(styling);
+    }
+
     private List<StylingRecommendationResponse.RecommendedProduct> hydrateAndValidate(
             StylingAiOutput aiOutput,
             List<Product> candidates

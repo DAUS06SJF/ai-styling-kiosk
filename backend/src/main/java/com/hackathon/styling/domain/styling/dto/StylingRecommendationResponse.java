@@ -14,7 +14,8 @@ public record StylingRecommendationResponse(
         String lookName,
         String stylingTip,
         List<RecommendedProduct> recommendations,
-        String kodi
+        String kodi,
+        boolean kodiSelected
 ) {
     public static StylingRecommendationResponse from(StylingRecommendation styling) {
         return new StylingRecommendationResponse(
@@ -31,7 +32,8 @@ public record StylingRecommendationResponse(
                                 item.getReason()
                         ))
                         .toList(),
-                styling.getKodi()
+                styling.getKodi(),
+                styling.isKodiSelected()
         );
     }
 

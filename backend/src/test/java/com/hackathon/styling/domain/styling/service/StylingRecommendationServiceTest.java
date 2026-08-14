@@ -101,6 +101,7 @@ class StylingRecommendationServiceTest {
         assertThat(response.recommendations()).hasSize(1);
         assertThat(response.recommendations().get(0).product().getId()).isEqualTo(2L);
         assertThat(response.kodi()).isEqualTo("http://localhost:8080/generated-stylings/test.png");
+        assertThat(response.kodiSelected()).isFalse();
         verify(stylingRecommendationRepository).save(any(StylingRecommendation.class));
 
         ArgumentCaptor<StylingAiInput> captor = ArgumentCaptor.forClass(StylingAiInput.class);
@@ -168,6 +169,29 @@ class StylingRecommendationServiceTest {
         assertThatThrownBy(() -> service.findById(999L))
                 .isInstanceOfSatisfying(BusinessException.class,
                         exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.STYLING_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("저장하기를 누르면 코디를 최종 선택 상태로 변경한다")
+    void selectStyling() {
+        Product selected = product(1L, "Aren 백팩", "BACKPACK", "Black", "H-0001");
+        StylingRecommendation styling = new StylingRecommendation(
+                selected,
+                "데이트",
+                "미니멀",
+                List.of("검정", "흰색"),
+                "모던 모노크롬 룩",
+                "화이트 상의로 대비를 주세요.",
+                "http://localhost:8080/generated-stylings/saved.png"
+        );
+        ReflectionTestUtils.setField(styling, "id", 10L);
+        when(stylingRecommendationRepository.findById(10L)).thenReturn(Optional.of(styling));
+
+        StylingRecommendationResponse response = service.select(10L);
+
+        assertThat(response.id()).isEqualTo(10L);
+        assertThat(response.kodiSelected()).isTrue();
+        assertThat(styling.isKodiSelected()).isTrue();
     }
 
     private StylingRecommendationRequest request(String hangerCode) {

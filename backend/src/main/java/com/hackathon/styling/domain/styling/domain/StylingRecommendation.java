@@ -59,6 +59,10 @@ public class StylingRecommendation {
     @Column(name = "kodi", nullable = false, length = 1000)
     private String kodi;
 
+    // 사용자가 저장하기 버튼으로 최종 선택한 코디인지 여부
+    @Column(name = "kodi_selected", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean kodiSelected = false;
+
     public StylingRecommendation(
             Product selectedProduct,
             String occasion,
@@ -79,6 +83,10 @@ public class StylingRecommendation {
 
     public void addItem(Product product, String reason, int displayOrder) {
         items.add(new StylingRecommendationItem(this, product, reason, displayOrder));
+    }
+
+    public void select() {
+        kodiSelected = true;
     }
 
     public List<String> getPreferredColorList() {

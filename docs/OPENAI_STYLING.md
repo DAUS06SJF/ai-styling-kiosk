@@ -4,7 +4,7 @@
 
 추천 결과는 다음 두 테이블에 저장된다.
 
-- `styling_recommendations`: 선택 상품, 상황, 분위기, 선호 색상, 코디 이름, 스타일링 팁, 코디 이미지 URL(`kodi`)
+- `styling_recommendations`: 선택 상품, 상황, 분위기, 선호 색상, 코디 이름, 스타일링 팁, 코디 이미지 URL(`kodi`), 사용자 최종 선택 여부(`kodi_selected`)
 - `styling_recommendation_items`: 코디에 포함된 추천 상품, 추천 이유, 표시 순서
 
 `spring.jpa.hibernate.ddl-auto=update` 설정 때문에 백엔드를 실행하면 두 테이블이 자동 생성된다.
@@ -60,6 +60,14 @@ http://localhost:8080/generated-stylings/{파일명}.png
 ```text
 GET http://localhost:8080/api/styling/recommendations/{id}
 ```
+
+키오스크에서 사용자가 코디를 고른 뒤 **저장하기**를 누르면 다음 API를 호출한다.
+
+```text
+POST http://localhost:8080/api/styling/recommendations/{id}/select
+```
+
+호출 전 `kodiSelected`는 `false`이며, 정상 처리 후 `true`로 변경되어 `styling_recommendations.kodi_selected`에 저장된다. 다음 QR 화면은 응답의 `id`와 `kodi`를 사용한다.
 
 ## 비용 관리
 

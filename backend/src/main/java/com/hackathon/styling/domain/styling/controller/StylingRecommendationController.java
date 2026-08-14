@@ -31,4 +31,9 @@ public class StylingRecommendationController {
     public ApiResponse<StylingRecommendationResponse> findById(@PathVariable Long id) {
         return ApiResponse.success(stylingRecommendationService.findById(id));
     }
+
+    @PostMapping("/recommendations/{id}/select")
+    public ApiResponse<StylingRecommendationResponse> select(@PathVariable Long id) {
+        return ApiResponse.success(stylingRecommendationService.select(id));
+    }
 }
