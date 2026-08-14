@@ -1,10 +1,10 @@
 spring:
   datasource:
-    # 테스트도 MySQL 사용. 개발 DB(styling)와 섞이지 않도록 styling_test 스키마를 따로 쓴다.
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:styling_test}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    # 공용 DB 환경변수와 분리한다. create-drop 테스트가 공용 styling DB를 지우면 안 된다.
+    url: jdbc:mysql://${TEST_DB_HOST:localhost}:${TEST_DB_PORT:3306}/${TEST_DB_NAME:styling_test}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&sslMode=${TEST_DB_SSL_MODE:DISABLED}&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    username: ${TEST_DB_USERNAME:root}
+    password: ${TEST_DB_PASSWORD:}
 
   jpa:
     hibernate:
