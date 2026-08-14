@@ -1,0 +1,71 @@
+.home-screen {
+  width: 100vw;
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #1f1f1f;
+  color: white;
+}
+
+.home-container {
+  width: 500px;
+
+  padding: 50px;
+
+  text-align: center;
+}
+
+.home-container h1 {
+  margin-bottom: 10px;
+
+  font-size: 32px;
+  letter-spacing: 3px;
+}
+
+.home-container p {
+  margin-bottom: 40px;
+
+  color: #999;
+}
+
+
+/* 버튼 */
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+
+  gap: 15px;
+}
+
+.menu-buttons a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  height: 60px;
+
+  border: 1px solid #555;
+  border-radius: 12px;
+
+  background: #292929;
+  color: white;
+
+  text-decoration: none;
+
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+
+  transition: 0.2s;
+}
+
+.menu-buttons a:hover {
+  background: #d8c875;
+  border-color: #d8c875;
+
+  color: #1f1f1f;
+}
