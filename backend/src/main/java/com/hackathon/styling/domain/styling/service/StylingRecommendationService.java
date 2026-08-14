@@ -6,9 +6,14 @@ import com.hackathon.styling.domain.admin.repository.ProductRepository;
 import com.hackathon.styling.domain.styling.client.StylingAiClient;
 import com.hackathon.styling.domain.styling.client.StylingAiInput;
 import com.hackathon.styling.domain.styling.client.StylingAiOutput;
+import com.hackathon.styling.domain.styling.client.StylingImageClient;
+import com.hackathon.styling.domain.styling.client.StylingImageInput;
 import com.hackathon.styling.domain.styling.config.OpenAiProperties;
+import com.hackathon.styling.domain.styling.domain.StylingRecommendation;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationRequest;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationResponse;
+import com.hackathon.styling.domain.styling.repository.StylingRecommendationRepository;
+import com.hackathon.styling.domain.styling.storage.StylingImageStorage;
 import com.hackathon.styling.global.error.BusinessException;
 import com.hackathon.styling.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +33,13 @@ public class StylingRecommendationService {
     private static final int DESCRIPTION_LIMIT = 240;
 
     private final ProductRepository productRepository;
+    private final StylingRecommendationRepository stylingRecommendationRepository;
     private final StylingAiClient stylingAiClient;
+    private final StylingImageClient stylingImageClient;
+    private final StylingImageStorage stylingImageStorage;
     private final OpenAiProperties properties;
 
+    @Transactional
     public StylingRecommendationResponse recommend(StylingRecommendationRequest request) {
         Product selectedProduct = productRepository.findByHangerCodeIgnoreCase(request.hangerCode().trim())
                 .orElseThrow(() -> new BusinessException(ErrorCode.HANGER_NOT_FOUND));
@@ -63,12 +72,47 @@ public class StylingRecommendationService {
                     "AI가 현재 재고에서 사용할 수 있는 상품을 추천하지 못했습니다.");
         }
 
-        return new StylingRecommendationResponse(
-                ProductResponse.from(selectedProduct),
-                aiOutput.lookName(),
-                aiOutput.stylingTip(),
-                recommendations
+        List<Product> recommendedProducts = recommendations.stream()
+                .map(recommendation -> findRecommendedProduct(candidates, recommendation))
+                .toList();
+        StylingImageInput imageInput = new StylingImageInput(
+                normalize(aiOutput.lookName()),
+                normalize(aiOutput.stylingTip()),
+                normalize(request.occasion()),
+                normalize(request.mood()),
+                normalizeColors(request.preferredColors()),
+                toImageProduct(selectedProduct, ""),
+                recommendedProducts.stream()
+                        .map(product -> toImageProduct(
+                                product,
+                                recommendationReason(recommendations, product.getId())
+                        ))
+                        .toList()
         );
+        String kodi = stylingImageStorage.store(stylingImageClient.generate(imageInput));
+
+        StylingRecommendation styling = new StylingRecommendation(
+                selectedProduct,
+                normalize(request.occasion()),
+                normalize(request.mood()),
+                normalizeColors(request.preferredColors()),
+                normalize(aiOutput.lookName()),
+                normalize(aiOutput.stylingTip()),
+                kodi
+        );
+        for (int index = 0; index < recommendations.size(); index++) {
+            StylingRecommendationResponse.RecommendedProduct recommendation = recommendations.get(index);
+            styling.addItem(recommendedProducts.get(index), recommendation.reason(), index + 1);
+        }
+
+        stylingRecommendationRepository.save(styling);
+        return StylingRecommendationResponse.from(styling);
+    }
+
+    public StylingRecommendationResponse findById(Long id) {
+        StylingRecommendation styling = stylingRecommendationRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STYLING_NOT_FOUND));
+        return StylingRecommendationResponse.from(styling);
     }
 
     private List<StylingRecommendationResponse.RecommendedProduct> hydrateAndValidate(
@@ -105,6 +149,37 @@ public class StylingRecommendationService {
         );
     }
 
+    private StylingImageInput.ImageProduct toImageProduct(Product product, String recommendationReason) {
+        return new StylingImageInput.ImageProduct(
+                product.getName(),
+                product.getCategory(),
+                product.getColor(),
+                truncate(product.getDescription()),
+                recommendationReason
+        );
+    }
+
+    private Product findRecommendedProduct(
+            List<Product> candidates,
+            StylingRecommendationResponse.RecommendedProduct recommendation
+    ) {
+        return candidates.stream()
+                .filter(candidate -> candidate.getId().equals(recommendation.product().getId()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.STYLING_GENERATION_FAILED));
+    }
+
+    private String recommendationReason(
+            List<StylingRecommendationResponse.RecommendedProduct> recommendations,
+            Long productId
+    ) {
+        return recommendations.stream()
+                .filter(recommendation -> recommendation.product().getId().equals(productId))
+                .map(StylingRecommendationResponse.RecommendedProduct::reason)
+                .findFirst()
+                .orElse("");
+    }
+
     private String truncate(String value) {
         if (value == null || value.isBlank()) {
             return "";
@@ -117,6 +192,16 @@ public class StylingRecommendationService {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private List<String> normalizeColors(List<String> colors) {
+        if (colors == null) {
+            return List.of();
+        }
+        return colors.stream()
+                .filter(color -> color != null && !color.isBlank())
+                .map(String::trim)
+                .toList();
     }
 
     private String normalizeReason(String value) {

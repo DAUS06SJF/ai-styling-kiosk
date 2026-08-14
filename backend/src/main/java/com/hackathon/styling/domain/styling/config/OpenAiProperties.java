@@ -19,9 +19,12 @@ public class OpenAiProperties {
 
     private String apiKey = "";
     private String model = "gpt-5.6-luna";
+    private String imageModel = "gpt-image-2";
+    private String imageSize = "1024x1024";
+    private String imageQuality = "medium";
     private String baseUrl = "https://api.openai.com";
     private Duration connectTimeout = Duration.ofSeconds(3);
-    private Duration readTimeout = Duration.ofSeconds(30);
+    private Duration readTimeout = Duration.ofSeconds(120);
 
     @Min(3)
     @Max(50)

@@ -9,7 +9,7 @@ spring:
         max-page-size: 100
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:styling}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:styling}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&sslMode=${DB_SSL_MODE:DISABLED}&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
@@ -48,9 +48,18 @@ openai:
   model: ${OPENAI_MODEL:gpt-5.6-luna}
   base-url: ${OPENAI_BASE_URL:https://api.openai.com}
   connect-timeout: ${OPENAI_CONNECT_TIMEOUT:3s}
-  read-timeout: ${OPENAI_READ_TIMEOUT:30s}
+  read-timeout: ${OPENAI_READ_TIMEOUT:120s}
+  image-model: ${OPENAI_IMAGE_MODEL:gpt-image-2}
+  image-size: ${OPENAI_IMAGE_SIZE:1024x1024}
+  image-quality: ${OPENAI_IMAGE_QUALITY:medium}
   candidate-limit: ${OPENAI_CANDIDATE_LIMIT:24}
   recommendation-count: ${OPENAI_RECOMMENDATION_COUNT:3}
+
+# GPT Image가 반환한 PNG를 로컬에 저장하고 URL로 제공한다.
+styling:
+  images:
+    storage-directory: ${STYLING_IMAGE_STORAGE_DIRECTORY:./generated-stylings}
+    public-base-url: ${STYLING_IMAGE_PUBLIC_BASE_URL:http://localhost:8080/generated-stylings}
 
 logging:
   level:

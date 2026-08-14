@@ -5,9 +5,13 @@ import com.hackathon.styling.domain.admin.repository.ProductRepository;
 import com.hackathon.styling.domain.styling.client.StylingAiClient;
 import com.hackathon.styling.domain.styling.client.StylingAiInput;
 import com.hackathon.styling.domain.styling.client.StylingAiOutput;
+import com.hackathon.styling.domain.styling.client.StylingImageClient;
 import com.hackathon.styling.domain.styling.config.OpenAiProperties;
+import com.hackathon.styling.domain.styling.domain.StylingRecommendation;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationRequest;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationResponse;
+import com.hackathon.styling.domain.styling.repository.StylingRecommendationRepository;
+import com.hackathon.styling.domain.styling.storage.StylingImageStorage;
 import com.hackathon.styling.global.error.BusinessException;
 import com.hackathon.styling.global.error.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +43,15 @@ class StylingRecommendationServiceTest {
     @Mock
     private StylingAiClient stylingAiClient;
 
+    @Mock
+    private StylingRecommendationRepository stylingRecommendationRepository;
+
+    @Mock
+    private StylingImageClient stylingImageClient;
+
+    @Mock
+    private StylingImageStorage stylingImageStorage;
+
     private StylingRecommendationService service;
 
     @BeforeEach
@@ -46,7 +59,14 @@ class StylingRecommendationServiceTest {
         OpenAiProperties properties = new OpenAiProperties();
         properties.setCandidateLimit(24);
         properties.setRecommendationCount(3);
-        service = new StylingRecommendationService(productRepository, stylingAiClient, properties);
+        service = new StylingRecommendationService(
+                productRepository,
+                stylingRecommendationRepository,
+                stylingAiClient,
+                stylingImageClient,
+                stylingImageStorage,
+                properties
+        );
     }
 
     @Test
@@ -68,13 +88,20 @@ class StylingRecommendationServiceTest {
                         new StylingAiOutput.Recommendation(2L, "중복 추천")
                 )
         ));
+        when(stylingImageClient.generate(any())).thenReturn(new byte[]{1, 2, 3});
+        when(stylingImageStorage.store(any(byte[].class)))
+                .thenReturn("http://localhost:8080/generated-stylings/test.png");
 
         StylingRecommendationResponse response = service.recommend(request(" H-0001 "));
 
         assertThat(response.lookName()).isEqualTo("모던 모노크롬 룩");
         assertThat(response.selectedProduct().getId()).isEqualTo(1L);
+        assertThat(response.occasion()).isEqualTo("데이트");
+        assertThat(response.preferredColors()).containsExactly("검정", "흰색");
         assertThat(response.recommendations()).hasSize(1);
         assertThat(response.recommendations().get(0).product().getId()).isEqualTo(2L);
+        assertThat(response.kodi()).isEqualTo("http://localhost:8080/generated-stylings/test.png");
+        verify(stylingRecommendationRepository).save(any(StylingRecommendation.class));
 
         ArgumentCaptor<StylingAiInput> captor = ArgumentCaptor.forClass(StylingAiInput.class);
         verify(stylingAiClient).generate(captor.capture());
@@ -103,6 +130,44 @@ class StylingRecommendationServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         exception -> assertThat(exception.getErrorCode())
                                 .isEqualTo(ErrorCode.STYLING_CANDIDATE_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("저장된 코디를 ID로 조회한다")
+    void findSavedStyling() {
+        Product selected = product(1L, "Aren 백팩", "BACKPACK", "Black", "H-0001");
+        Product shirt = product(2L, "로고 티셔츠", "TSHIRT_TOP", "White", "H-0002");
+        StylingRecommendation styling = new StylingRecommendation(
+                selected,
+                "데이트",
+                "미니멀",
+                List.of("검정", "흰색"),
+                "모던 모노크롬 룩",
+                "화이트 상의로 대비를 주세요.",
+                "http://localhost:8080/generated-stylings/saved.png"
+        );
+        styling.addItem(shirt, "검정 백팩과 선명한 대비를 만듭니다.", 1);
+        ReflectionTestUtils.setField(styling, "id", 10L);
+
+        when(stylingRecommendationRepository.findById(10L)).thenReturn(Optional.of(styling));
+
+        StylingRecommendationResponse response = service.findById(10L);
+
+        assertThat(response.id()).isEqualTo(10L);
+        assertThat(response.lookName()).isEqualTo("모던 모노크롬 룩");
+        assertThat(response.kodi()).endsWith("saved.png");
+        assertThat(response.recommendations()).hasSize(1);
+        assertThat(response.recommendations().get(0).product().getId()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("저장되지 않은 코디 ID는 STYLING_NOT_FOUND 오류를 반환한다")
+    void stylingNotFound() {
+        when(stylingRecommendationRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(999L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.STYLING_NOT_FOUND));
     }
 
     private StylingRecommendationRequest request(String hangerCode) {
