@@ -11,6 +11,7 @@ body,
 #root {
   margin: 0;
   padding: 0;
+
   width: 100%;
   height: 100%;
 }
@@ -59,6 +60,7 @@ button {
   padding: 18px 20px;
 
   display: flex;
+
   justify-content: space-between;
   align-items: flex-start;
 
@@ -90,58 +92,10 @@ button {
   letter-spacing: -0.5px;
 }
 
-.live-status {
-  display: flex;
-  align-items: center;
-
-  gap: 5px;
-
-  padding: 5px 9px;
-
-  border-radius: 20px;
-
-  background: #ffffff;
-
-  color: #a2834d;
-
-  font-size: 8px;
-}
-
-.live-status span {
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-
-  background: #d6a52e;
-
-  animation: livePulse 1.5s infinite;
-}
-
-@keyframes livePulse {
-
-  0% {
-    box-shadow:
-      0 0 0 0
-      rgba(214, 165, 46, 0.5);
-  }
-
-  70% {
-    box-shadow:
-      0 0 0 6px
-      rgba(214, 165, 46, 0);
-  }
-
-  100% {
-    box-shadow:
-      0 0 0 0
-      rgba(214, 165, 46, 0);
-  }
-}
 
 
 /* =========================================
-   MAIN AREA
+   MAIN
 ========================================= */
 
 .mannequin-main {
@@ -184,7 +138,7 @@ button {
   top: 12px;
   left: 13px;
 
-  z-index: 5;
+  z-index: 10;
 
   font-size: 6px;
 
@@ -206,13 +160,57 @@ button {
   display: flex;
 
   justify-content: center;
-
   align-items: center;
+}
+/* =========================================
+   AI GENERATED LOOK IMAGE
+========================================= */
+
+.ai-look-image {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  display: block;
+
+  user-select: none;
+  pointer-events: none;
 }
 
 
+/* AI 이미지가 아직 없을 때 */
+
+.ai-image-placeholder {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+
+  color: #a38b64;
+}
+
+.ai-image-placeholder span {
+  font-size: 10px;
+
+  letter-spacing: 2px;
+}
+
+.ai-image-placeholder p {
+  margin-top: 6px;
+
+  font-size: 6px;
+
+  color: #999;
+}
+
 /* =========================================
-   2D MANNEQUIN
+   MANNEQUIN
 ========================================= */
 
 .mannequin-character {
@@ -226,16 +224,27 @@ button {
   justify-content: center;
   align-items: center;
 
+  transform-origin: center bottom;
+
   animation:
     mannequinWalk
     1.8s
     ease-in-out
     infinite;
 
-  transform-origin: center bottom;
+  z-index: 2;
 }
 
-.mannequin-body-image {
+
+/* =========================================
+   CLOTHING LAYERS
+========================================= */
+
+.mannequin-layer {
+  position: absolute;
+
+  inset: 0;
+
   width: 100%;
   height: 100%;
 
@@ -244,19 +253,31 @@ button {
   display: block;
 
   user-select: none;
-
   pointer-events: none;
 
-  filter:
-    drop-shadow(
-      0 8px 14px
-      rgba(80, 70, 60, 0.08)
-    );
+  transform-origin: center center;
+}
+
+/* 마네킹 */
+
+.body-layer {
+  z-index: 1;
+}
+
+
+/* 옷 */
+
+.top-layer {
+  z-index: 2;
+  width: 955%;
+  left: 49%;
+  top: -3%;
+  transform: translateX(-50%);
 }
 
 
 /* =========================================
-   2D WALKING ANIMATION
+   WALKING MOTION
 ========================================= */
 
 @keyframes mannequinWalk {
@@ -299,7 +320,7 @@ button {
 
 
 /* =========================================
-   MANNEQUIN SHADOW
+   SHADOW
 ========================================= */
 
 .character-shadow {
@@ -322,7 +343,7 @@ button {
 
   filter: blur(5px);
 
-  z-index: 0;
+  z-index: 1;
 }
 
 
@@ -448,9 +469,7 @@ button {
 
   padding: 4px;
 
-  border:
-    1px solid
-    transparent;
+  border: 1px solid transparent;
 
   border-radius: 8px;
 
@@ -497,7 +516,6 @@ button {
   display: flex;
 
   justify-content: center;
-
   align-items: center;
 
   background: #f0ece5;
@@ -544,7 +562,7 @@ button {
 }
 
 
-/* LOOK별 미리보기 */
+/* LOOK별 색상 */
 
 .look-card:nth-child(1) .mini-body {
   background:
@@ -594,7 +612,7 @@ button {
 
 
 /* =========================================
-   PRODUCT SECTION
+   PRODUCT
 ========================================= */
 
 .product-section {
@@ -662,7 +680,8 @@ button {
 
   display: grid;
 
-  grid-template-columns: 20% 1fr;
+  grid-template-columns: 18% 1fr auto auto;
+  gap: 6px;
 
   align-items: center;
 
@@ -689,9 +708,30 @@ button {
   text-overflow: ellipsis;
 }
 
+.product-row b {
+  font-size: 7px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.selected-badge {
+  padding: 2px 4px;
+
+  border-radius: 4px;
+
+  background: #f5df9d;
+
+  color: #96731f;
+
+  font-size: 5px;
+
+  font-style: normal;
+
+  white-space: nowrap;
+}
 
 /* =========================================
-   TOTAL PRICE
+   PRICE
 ========================================= */
 
 .total-price {
@@ -803,3 +843,4 @@ button {
       7px;
   }
 }
+
