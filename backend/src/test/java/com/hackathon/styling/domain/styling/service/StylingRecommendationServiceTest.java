@@ -101,7 +101,7 @@ class StylingRecommendationServiceTest {
         assertThat(response.recommendations()).hasSize(1);
         assertThat(response.recommendations().get(0).product().getId()).isEqualTo(2L);
         assertThat(response.kodi()).isEqualTo("http://localhost:8080/generated-stylings/test.png");
-        assertThat(response.kodiSelected()).isFalse();
+        assertThat(response.kodiSelected()).isNull();
         verify(stylingRecommendationRepository).save(any(StylingRecommendation.class));
 
         ArgumentCaptor<StylingAiInput> captor = ArgumentCaptor.forClass(StylingAiInput.class);
@@ -190,8 +190,10 @@ class StylingRecommendationServiceTest {
         StylingRecommendationResponse response = service.select(10L);
 
         assertThat(response.id()).isEqualTo(10L);
-        assertThat(response.kodiSelected()).isTrue();
-        assertThat(styling.isKodiSelected()).isTrue();
+        assertThat(response.kodiSelected())
+                .isEqualTo("http://localhost:8080/generated-stylings/saved.png");
+        assertThat(styling.getKodiSelected())
+                .isEqualTo("http://localhost:8080/generated-stylings/saved.png");
     }
 
     private StylingRecommendationRequest request(String hangerCode) {
