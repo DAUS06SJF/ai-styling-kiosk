@@ -1,44 +1,157 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./hanger.css";
 
+const translations = {
+  ko: {
+    eyebrow: "PRODUCT RECOGNITION",
+    title: "제품을 선택해주세요",
+    description: "행거에서 원하는 제품을 선택하면 자동으로 인식됩니다.",
+    waiting: "제품 선택 대기 중",
+    analyzing: "선택하신 제품을 분석 중입니다...",
+    analyzingSub: "잠시만 기다려주세요.",
+    next: "스타일 선택하기",
+  },
+
+  en: {
+    eyebrow: "PRODUCT RECOGNITION",
+    title: "SELECT YOUR ITEM",
+    description:
+      "Select an item from the hanger and it will be recognized automatically.",
+    waiting: "WAITING FOR ITEM",
+    analyzing: "Analyzing your selected item...",
+    analyzingSub: "Please wait a moment.",
+    next: "CHOOSE STYLE",
+  },
+
+  zh: {
+    eyebrow: "PRODUCT RECOGNITION",
+    title: "请选择商品",
+    description: "从衣架上选择您想要的商品，系统将自动识别。",
+    waiting: "等待选择商品",
+    analyzing: "正在分析您选择的商品...",
+    analyzingSub: "请稍候。",
+    next: "选择风格",
+  },
+
+  ja: {
+    eyebrow: "PRODUCT RECOGNITION",
+    title: "商品を選択してください",
+    description: "ハンガーから商品を選ぶと自動的に認識されます。",
+    waiting: "商品を待っています",
+    analyzing: "選択した商品を分析しています...",
+    analyzingSub: "少々お待ちください。",
+    next: "スタイルを選択",
+  },
+};
+
 function App() {
+  const navigate = useNavigate();
+
+  const savedLanguage = localStorage.getItem("language") || "ko";
+  const text = translations[savedLanguage] || translations.ko;
+
+  const [status, setStatus] = useState("waiting");
+
+  // 실제 센서 연동 전 테스트용
+  const handleTestDetection = () => {
+    setStatus("analyzing");
+  };
+
+  // 임시 이동 버튼
+  const handleNext = () => {
+    navigate("/stylechoice");
+  };
+
   return (
-    <div className="hanger-screen">
+    <main className="hanger-screen">
+      <section className="hanger-content">
+        <p className="hanger-eyebrow">{text.eyebrow}</p>
 
-      <div className="hanger-content">
+        <h1 className="hanger-title">{text.title}</h1>
 
-        <p className="hanger-label">
-          AI STYLING KIOSK
-        </p>
+        <p className="hanger-description">{text.description}</p>
 
-        <h1>
-          옷을 선택해주세요
-        </h1>
+        <div className="hanger-visual">
+          {status === "waiting" && (
+            <>
+              <svg
+                className="hanger-icon"
+                viewBox="0 0 240 180"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M120 25C120 8 145 7 145 25C145 38 125 40 120 55"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
 
-        <p className="hanger-description">
-          행거에서 원하는 옷을 꺼내주세요.
-        </p>
+                <path
+                  d="M120 55L35 125"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
 
-        {/* 센서 영역 */}
-        <div className="hanger-sensor">
+                <path
+                  d="M120 55L205 125"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
 
-          <div className="sensor-circle">
-            <div className="sensor-inner"></div>
-          </div>
+                <path
+                  d="M35 125H205"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              </svg>
 
-          <p>
-            WAITING FOR ITEM
-          </p>
+              <p className="waiting-text">{text.waiting}</p>
 
+              <div className="waiting-indicator">
+                <span />
+                <span />
+                <span />
+              </div>
+            </>
+          )}
+
+          {status === "analyzing" && (
+            <div className="analyzing-area">
+              <div className="loading-ring" />
+
+              <p className="analyzing-text">{text.analyzing}</p>
+
+              <p className="analyzing-sub">{text.analyzingSub}</p>
+
+              {/* 실제 센서/API 연결 전 임시 버튼 */}
+              <button
+                type="button"
+                className="temporary-next-button"
+                onClick={handleNext}
+              >
+                <span>{text.next}</span>
+                <span>→</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="hanger-status">
-          <span></span>
-          RFID SENSOR ACTIVE
-        </div>
-
-      </div>
-
-    </div>
+        {status === "waiting" && (
+          <button
+            type="button"
+            className="sensor-test-button"
+            onClick={handleTestDetection}
+          >
+            SENSOR TEST
+          </button>
+        )}
+      </section>
+    </main>
   );
 }
 

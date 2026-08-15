@@ -1,66 +1,365 @@
 .start-screen {
-  width: 100vw;
+  position: relative;
+
+  width: 100%;
   min-height: 100vh;
 
   display: flex;
   justify-content: center;
   align-items: center;
 
-  background: #1f1f1f;
-  color: white;
+  overflow: hidden;
 
-  text-align: center;
+  background: linear-gradient(
+    180deg,
+    #f8f2e7 0%,
+    #fbf7ef 48%,
+    #fffdf8 100%
+  );
+
+  color: #25211c;
 }
 
-.start-content {
-  width: min(90%, 600px);
+
+/* =========================
+   언어 선택
+========================= */
+
+.language-selector {
+  position: absolute;
+
+  top: 70px;
+  right: 70px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  z-index: 10;
 }
 
-.start-label {
-  margin-bottom: 25px;
-
-  font-size: 14px;
-  letter-spacing: 4px;
-
-  color: #d8c875;
-}
-
-.start-content h1 {
-  margin: 0;
-
-  font-size: 48px;
-  line-height: 1.3;
-  font-weight: 500;
-}
-
-.start-description {
-  margin-top: 25px;
-
-  color: #999;
-
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-.start-button {
-  width: 280px;
-
-  margin-top: 50px;
-  padding: 18px;
+.language-option {
+  padding: 10px 12px;
 
   border: none;
-  border-radius: 12px;
+  border-bottom: 1px solid transparent;
 
-  background: #d8c875;
-  color: #1f1f1f;
+  background: transparent;
 
-  font-size: 16px;
-  font-weight: bold;
-  letter-spacing: 2px;
+  color: #9f947e;
+
+  font-size: 18px;
+  font-weight: 500;
+
+  letter-spacing: 1.5px;
 
   cursor: pointer;
+
+  transition:
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.language-option:hover {
+  color: #625745;
+}
+
+.language-option.active {
+  color: #625745;
+
+  border-bottom-color: #a98c58;
+}
+
+
+/* =========================
+   중앙 콘텐츠
+========================= */
+
+.start-content {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 0 70px;
+
+  text-align: center;
+
+  transform: translateY(-110px);
+}
+
+
+/* =========================
+   작은 영문
+========================= */
+
+.hero-eyebrow {
+  margin: 0 0 50px;
+
+  color: #a78a55;
+
+  font-size: 20px;
+  font-weight: 500;
+
+  letter-spacing: 8px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================
+   메인 제목
+========================= */
+
+.hero-title {
+  width: 100%;
+  max-width: 940px;
+
+  margin: 0;
+
+  color: #25211c;
+
+  font-family:
+    "Times New Roman",
+    Georgia,
+    serif;
+
+  /*
+    1080px 화면 폭에 맞춰
+    자동으로 크기 조절
+  */
+  font-size: clamp(58px, 8vw, 88px);
+
+  font-weight: 400;
+
+  /*
+    기존 15px보다 줄여서
+    긴 영어 제목도 화면 안에 들어오게 설정
+  */
+  letter-spacing: clamp(6px, 1vw, 11px);
+
+  line-height: 1.3;
+
+  text-align: center;
+
+  white-space: normal;
+
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+
+/* =========================
+   제목과 버튼 사이 선
+========================= */
+
+.hero-divider {
+  width: 560px;
+  max-width: 70%;
+
+  height: 1px;
+
+  margin-top: 220px;
+
+  background: rgba(117, 97, 61, 0.22);
+}
+
+
+/* =========================
+   시작 버튼
+========================= */
+
+.start-button {
+  width: 560px;
+  max-width: 70%;
+
+  height: 110px;
+
+  margin-top: 65px;
+
+  padding: 0 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border: 1px solid rgba(181, 150, 91, 0.7);
+
+  background: transparent;
+
+  color: #7f6337;
+
+  font-size: 24px;
+  font-weight: 500;
+
+  letter-spacing: 8px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    transform 0.4s ease;
 }
 
 .start-button:hover {
-  opacity: 0.85;
+  background: #8e6d39;
+
+  border-color: #8e6d39;
+
+  color: #ffffff;
+
+  transform: translateY(-3px);
+}
+
+
+/* =========================
+   화살표
+========================= */
+
+.start-arrow {
+  font-size: 32px;
+  font-weight: 300;
+
+  transition: transform 0.35s ease;
+}
+
+.start-button:hover .start-arrow {
+  transform: translateX(8px);
+}
+
+
+/* =========================
+   1080 x 1920 키오스크
+========================= */
+
+@media (min-width: 900px) and (orientation: portrait) {
+  .language-selector {
+    top: 75px;
+    right: 70px;
+
+    gap: 10px;
+  }
+
+  .language-option {
+    font-size: 18px;
+
+    padding: 10px 12px;
+  }
+
+  .start-content {
+    padding: 0 65px;
+
+    transform: translateY(-120px);
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 52px;
+
+    font-size: 20px;
+
+    letter-spacing: 8px;
+  }
+
+  .hero-title {
+    /*
+      한국어는 크게,
+      영어처럼 긴 문자열은 화면 폭 때문에
+      자동으로 줄어듦
+    */
+    font-size: clamp(62px, 7.8vw, 84px);
+
+    letter-spacing: clamp(6px, 0.85vw, 10px);
+
+    max-width: 950px;
+  }
+
+  .hero-divider {
+    width: 580px;
+
+    margin-top: 230px;
+  }
+
+  .start-button {
+    width: 580px;
+    height: 112px;
+
+    margin-top: 70px;
+
+    padding: 0 50px;
+
+    font-size: 24px;
+
+    letter-spacing: 8px;
+  }
+}
+
+
+/* =========================
+   작은 화면 대응
+========================= */
+
+@media (max-width: 700px) {
+  .language-selector {
+    top: 28px;
+    right: 22px;
+
+    gap: 4px;
+  }
+
+  .language-option {
+    padding: 7px 8px;
+
+    font-size: 12px;
+  }
+
+  .start-content {
+    padding: 0 30px;
+
+    transform: translateY(-40px);
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 32px;
+
+    font-size: 10px;
+
+    letter-spacing: 4px;
+  }
+
+  .hero-title {
+    max-width: 100%;
+
+    font-size: clamp(36px, 10vw, 46px);
+
+    letter-spacing: 5px;
+
+    line-height: 1.35;
+  }
+
+  .hero-divider {
+    width: 280px;
+
+    margin-top: 100px;
+  }
+
+  .start-button {
+    width: 280px;
+    height: 68px;
+
+    margin-top: 38px;
+
+    padding: 0 28px;
+
+    font-size: 13px;
+
+    letter-spacing: 5px;
+  }
+
+  .start-arrow {
+    font-size: 19px;
+  }
 }
