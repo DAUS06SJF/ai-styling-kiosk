@@ -170,10 +170,10 @@ function App() {
       return;
     }
 
-    // 다음 AI 코디 화면에서 사용
+    // 다음 실시간 코디 화면에서 사용
     localStorage.setItem("selectedStyle", selectedStyle);
 
-    navigate("/ai-codi");
+    navigate("/mannequin");
   };
 
   return (
