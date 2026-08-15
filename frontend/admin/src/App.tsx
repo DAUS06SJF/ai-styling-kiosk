@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { createProduct, deleteProduct, getProducts, updateProduct } from './api/products'
+import { createProduct, deleteProduct, getProducts, resolveProductImageUrl, updateProduct } from './api/products'
 import { ProductForm } from './components/ProductForm'
 import type { PageData, Product, ProductInput } from './types/product'
 
@@ -138,7 +138,7 @@ function App() {
                   <tr><td colSpan={6}><div className="empty-state"><span>◇</span><strong>등록된 상품이 없습니다</strong><p>첫 상품을 등록하고 행거와 연결해 보세요.</p><button className="button primary" onClick={openCreate}>상품 등록하기</button></div></td></tr>
                 ) : data.content.map((product) => (
                   <tr key={product.id}>
-                    <td><div className="product-cell"><div className="thumbnail">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <span>{product.name.charAt(0)}</span>}</div><div><strong>{product.name}</strong><small>{product.color} · {product.size}</small></div></div></td>
+                    <td><div className="product-cell"><div className="thumbnail">{product.imageUrl ? <img src={resolveProductImageUrl(product.imageUrl)} alt="" /> : <span>{product.name.charAt(0)}</span>}</div><div><strong>{product.name}</strong><small>{product.color} · {product.size}</small></div></div></td>
                     <td><span className="tag">{product.category}</span></td>
                     <td><code>{product.hangerCode}</code></td>
                     <td className="price">{formatPrice(product.price)}</td>

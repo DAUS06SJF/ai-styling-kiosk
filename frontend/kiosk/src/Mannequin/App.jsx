@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  getLatestStylingRecommendations,
+  resolveBackendAssetUrl,
+  selectStylingRecommendation,
+  WEB_SOCKET_URL,
+} from "../shared/stylingApi";
 import "./Mannequin.css";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080")
-  .replace(/\/$/, "");
-const WEB_SOCKET_URL = import.meta.env.VITE_WS_URL
-  || `${API_BASE_URL.replace(/^http/i, "ws")}/ws/styling`;
 const MAX_LOOKS = 4;
 
 const moodAliases = {
@@ -15,23 +17,6 @@ const moodAliases = {
   VINTAGE: ["VINTAGE", "빈티지"],
   Y2K: ["Y2K"],
 };
-
-function resolveImageUrl(imageUrl) {
-  if (!imageUrl) return "";
-
-  try {
-    const image = new URL(imageUrl);
-    const api = new URL(API_BASE_URL);
-    if (["localhost", "127.0.0.1"].includes(image.hostname)
-      && !["localhost", "127.0.0.1"].includes(api.hostname)) {
-      image.protocol = api.protocol;
-      image.host = api.host;
-    }
-    return image.toString();
-  } catch {
-    return imageUrl;
-  }
-}
 
 function categoryLabel(category = "") {
   const normalized = category.toUpperCase();
@@ -55,7 +40,7 @@ function toLook(recommendation) {
     id: recommendation.id,
     name: recommendation.lookName || `LOOK ${recommendation.id}`,
     mood: recommendation.mood || "",
-    image: resolveImageUrl(recommendation.kodi),
+    image: resolveBackendAssetUrl(recommendation.kodi),
     kodiSelected: recommendation.kodiSelected,
     selectedProductId: recommendation.selectedProduct?.id,
     products: uniqueProducts,
@@ -67,11 +52,21 @@ function sameMood(responseMood, selectedMood) {
   return aliases.some((alias) => alias.toLowerCase() === (responseMood || "").toLowerCase());
 }
 
+function mergeLooks(...lookGroups) {
+  const merged = lookGroups.flat().filter(Boolean);
+  return merged.filter(
+    (look, index) => merged.findIndex((candidate) => candidate.id === look.id) === index,
+  ).slice(0, MAX_LOOKS);
+}
+
 function App() {
   const navigate = useNavigate();
+  const location = useLocation();
   const selectedMood = localStorage.getItem("selectedStyle") || "MINIMAL";
-  const [looks, setLooks] = useState([]);
-  const [selectedLookId, setSelectedLookId] = useState(null);
+  const routeRecommendation = location.state?.recommendation;
+  const routeLook = routeRecommendation ? toLook(routeRecommendation) : null;
+  const [looks, setLooks] = useState(() => routeLook ? [routeLook] : []);
+  const [selectedLookId, setSelectedLookId] = useState(routeLook?.id ?? null);
   const [connectionState, setConnectionState] = useState("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -81,18 +76,14 @@ function App() {
 
     async function loadLooks() {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/styling/recommendations?mood=${encodeURIComponent(selectedMood)}&limit=${MAX_LOOKS}`,
-          { signal: abortController.signal },
+        const recommendations = await getLatestStylingRecommendations(
+          selectedMood,
+          MAX_LOOKS,
+          abortController.signal,
         );
-        const body = await response.json();
-        if (!response.ok || !body.success) {
-          throw new Error(body.error?.message || "코디 목록을 불러오지 못했습니다.");
-        }
-
-        const loadedLooks = (body.data || []).map(toLook);
-        setLooks(loadedLooks);
-        setSelectedLookId(loadedLooks[0]?.id ?? null);
+        const loadedLooks = (recommendations || []).map(toLook);
+        setLooks((previous) => mergeLooks(previous, loadedLooks));
+        setSelectedLookId((previous) => previous ?? loadedLooks[0]?.id ?? null);
         setErrorMessage("");
       } catch (error) {
         if (error.name !== "AbortError") {
@@ -125,10 +116,7 @@ function App() {
           }
 
           const newLook = toLook(event.data);
-          setLooks((previous) => [
-            newLook,
-            ...previous.filter((look) => look.id !== newLook.id),
-          ].slice(0, MAX_LOOKS));
+          setLooks((previous) => mergeLooks([newLook], previous));
           setSelectedLookId(newLook.id);
           setErrorMessage("");
         } catch {
@@ -164,19 +152,14 @@ function App() {
     setSaving(true);
     setErrorMessage("");
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/styling/recommendations/${currentLook.id}/select`,
-        { method: "POST" },
-      );
-      const body = await response.json();
-      if (!response.ok || !body.success) {
-        throw new Error(body.error?.message || "코디 저장에 실패했습니다.");
-      }
-
-      localStorage.setItem("selectedKodi", body.data.kodiSelected);
-      localStorage.setItem("selectedKodiId", String(body.data.id));
+      const selectedRecommendation = await selectStylingRecommendation(currentLook.id);
+      localStorage.setItem("selectedKodi", selectedRecommendation.kodiSelected);
+      localStorage.setItem("selectedKodiId", String(selectedRecommendation.id));
       navigate("/qr-share", {
-        state: { kodiSelected: body.data.kodiSelected, recommendationId: body.data.id },
+        state: {
+          kodiSelected: selectedRecommendation.kodiSelected,
+          recommendationId: selectedRecommendation.id,
+        },
       });
     } catch (error) {
       setErrorMessage(error.message || "코디 저장에 실패했습니다.");

@@ -30,3 +30,7 @@ npm run dev
 ```env
 VITE_API_BASE_URL=http://localhost:8080
 ```
+
+환경변수를 생략하면 현재 관리자 페이지를 연 호스트의 `8080` 포트에 있는 백엔드로 연결됩니다.
+상품 이미지 URL이 `localhost`로 저장되어 있더라도 실제 백엔드 호스트 주소로 변환해 표시합니다.
+백엔드의 `CORS_ALLOWED_ORIGINS`에는 관리자 페이지 주소(기본 `http://localhost:5174`)가 포함되어야 합니다.
