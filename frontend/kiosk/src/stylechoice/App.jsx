@@ -170,10 +170,11 @@ function App() {
       return;
     }
 
-    // 다음 AI 코디 화면에서 사용
+    // 선택한 스타일 저장
     localStorage.setItem("selectedStyle", selectedStyle);
 
-    navigate("/ai-codi");
+    // 스타일 선택 후 바로 마네킹 화면으로 이동
+    navigate("/mannequin");
   };
 
   return (

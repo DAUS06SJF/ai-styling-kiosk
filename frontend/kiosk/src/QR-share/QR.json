@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "data": {
+    "photoId": 15,
+    "s3Url": "https://my-bucket.s3.ap-northeast-2.amazonaws.com/kiosk_photos/photo_15_17100000.jpg",
+    "downloadWebUrl": "https://qr-site-e7tc.vercel.app/?photoUrl=...",
+    "qrCodeImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAV4AAAFeCAYAAAD...",
+    "createdAt": "2026-08-15T01:30:00.000Z"
+  }
+}
