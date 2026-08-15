@@ -92,3 +92,32 @@
 
   transform: translateY(-2px);
 }
+
+.style-card:disabled {
+  cursor: default;
+}
+
+.style-card.selected {
+  border-color: #d8c875;
+  box-shadow: 0 0 0 1px rgba(216, 200, 117, 0.35);
+}
+
+.ai-codi-description.error {
+  color: #ff9f96;
+}
+
+.ai-codi-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.ai-codi-actions button {
+  padding: 12px 18px;
+  border: 1px solid #d8c875;
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}

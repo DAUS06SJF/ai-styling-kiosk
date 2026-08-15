@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./hanger.css";
 
@@ -51,10 +51,19 @@ function App() {
   const savedLanguage = localStorage.getItem("language") || "ko";
   const text = translations[savedLanguage] || translations.ko;
 
-  const [status, setStatus] = useState("waiting");
+  const detectedHangerCode = new URLSearchParams(window.location.search).get("hangerCode");
+  const demoHangerCode = import.meta.env.VITE_DEMO_HANGER_CODE || "H-0001";
+  const [status, setStatus] = useState(detectedHangerCode ? "analyzing" : "waiting");
+
+  useEffect(() => {
+    if (detectedHangerCode) {
+      localStorage.setItem("selectedHangerCode", detectedHangerCode);
+    }
+  }, [detectedHangerCode]);
 
   // 실제 센서 연동 전 테스트용
   const handleTestDetection = () => {
+    localStorage.setItem("selectedHangerCode", demoHangerCode);
     setStatus("analyzing");
   };
 

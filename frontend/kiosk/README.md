@@ -29,5 +29,13 @@ npm run dev
 조회하고, 연결 이후에는 WebSocket의 `STYLING_RECOMMENDATION_CREATED` 이벤트를 받아 새 이미지를
 자동으로 추가합니다. 저장하기를 누르면 `POST /api/styling/recommendations/{id}/select`를 호출합니다.
 
+전체 화면 연결 순서는 다음과 같습니다.
+
+1. `/hanger?hangerCode=H-0001`에서 감지된 행거 코드를 저장합니다. 센서 연결 전에는
+   `VITE_DEMO_HANGER_CODE`가 테스트 버튼에 사용됩니다.
+2. `/stylechoice`에서 선택한 스타일을 저장하고 `/ai-codi`로 이동합니다.
+3. `/ai-codi`가 저장된 행거 코드와 스타일로 코디 생성 API를 호출합니다.
+4. 생성 응답을 `/mannequin`으로 넘기며, 마네킹 화면은 DB 조회와 WebSocket 연결도 함께 유지합니다.
+
 패드에서 실행할 때는 두 주소의 `localhost`를 백엔드가 실행되는 컴퓨터 또는 배포 서버의 IP/도메인으로
 바꾸고, 백엔드의 `CORS_ALLOWED_ORIGINS`에도 패드가 접속한 프론트 주소를 추가해야 합니다.
