@@ -1,118 +1,484 @@
-.stylechoice-screen {
-  width: 100vw;
+.style-screen {
+  position: relative;
+
+  width: 100%;
+  min-height: 100vh;
+
+  overflow: hidden;
+
+  background: linear-gradient(
+    180deg,
+    #f8f2e7 0%,
+    #fbf7ef 48%,
+    #fffdf8 100%
+  );
+
+  color: #25211c;
+}
+
+
+/* =========================
+   전체 콘텐츠
+========================= */
+
+.style-content {
+  width: 100%;
   min-height: 100vh;
 
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 
-  padding: 70px 30px;
-
-  background: #1f1f1f;
-  color: white;
-}
-
-.stylechoice-container {
-  width: min(90%, 650px);
+  padding: 145px 75px 120px;
 
   text-align: center;
 }
 
 
-/* 상단 */
+/* =========================
+   상단 영역
+========================= */
 
-.stylechoice-label {
-  margin: 0;
-
-  color: #d8c875;
-
-  font-size: 13px;
-  letter-spacing: 4px;
+.style-header {
+  width: 100%;
+  max-width: 900px;
 }
 
-.stylechoice-container h1 {
-  margin: 25px 0 0;
+.style-eyebrow {
+  margin: 0 0 42px;
 
-  font-size: 42px;
-  line-height: 1.3;
+  color: #a78a55;
+
+  font-size: 18px;
   font-weight: 500;
+
+  letter-spacing: 8px;
 }
 
-.stylechoice-description {
-  margin: 20px 0 45px;
+.style-title {
+  max-width: 900px;
 
-  color: #999;
+  margin: 0 auto;
 
-  font-size: 14px;
-  line-height: 1.7;
+  color: #25211c;
+
+  font-size: 72px;
+  font-weight: 400;
+
+  line-height: 1.35;
+
+  letter-spacing: 4px;
+
+  word-break: keep-all;
+}
+
+.style-description {
+  max-width: 760px;
+
+  margin: 42px auto 0;
+
+  color: #837866;
+
+  font-size: 21px;
+  font-weight: 400;
+
+  line-height: 1.8;
+
+  letter-spacing: 1px;
+
+  word-break: keep-all;
 }
 
 
-/* 스타일 목록 */
+/* =========================
+   스타일 카드 영역
+========================= */
 
-.style-list {
-  display: flex;
-  flex-direction: column;
+.style-grid {
+  width: 100%;
+  max-width: 860px;
 
-  gap: 12px;
+  margin-top: 115px;
+
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 24px;
 }
 
 
-/* 카드 */
+/* =========================
+   스타일 카드
+========================= */
 
 .style-card {
-  width: 100%;
-  min-height: 85px;
+  appearance: none;
+  -webkit-appearance: none;
+
+  position: relative;
+
+  height: 285px;
+
+  padding: 32px 34px;
 
   display: flex;
-  align-items: center;
-
-  padding: 20px 25px;
-
-  border: 1px solid #444;
-  border-radius: 14px;
-
-  background: #292929;
-  color: white;
+  flex-direction: column;
+  justify-content: space-between;
 
   text-align: left;
 
+  border: 1px solid rgba(157, 130, 81, 0.45);
+  border-radius: 0;
+
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+
+  color: #2b261f;
+
   cursor: pointer;
 
-  transition: 0.2s;
+  box-shadow: none;
+
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    transform 0.35s ease,
+    box-shadow 0.35s ease;
 }
+
+
+/* =========================
+   마우스 Hover
+========================= */
 
 .style-card:hover {
-  border-color: #d8c875;
+  transform: translateY(-4px);
 
-  background: #333;
+  background: #c3a36a !important;
+  background-color: #c3a36a !important;
 
-  transform: translateY(-2px);
+  border-color: #c3a36a;
+
+  box-shadow:
+    0 15px 35px rgba(102, 76, 34, 0.1);
 }
 
 
-/* 번호 */
+/* Hover 상태 글씨 */
+
+.style-card:hover .style-number {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.style-card:hover .style-check {
+  color: #ffffff;
+}
+
+.style-card:hover .style-card-bottom h2 {
+  color: #ffffff;
+}
+
+.style-card:hover .style-card-bottom p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+
+/* =========================
+   선택된 카드
+========================= */
+
+.style-card.selected {
+  background: #b69459 !important;
+  background-color: #b69459 !important;
+
+  border-color: #b69459;
+
+  color: #ffffff;
+
+  box-shadow:
+    0 16px 38px rgba(102, 76, 34, 0.12);
+}
+
+.style-card.selected .style-number {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.style-card.selected .style-check {
+  color: #ffffff;
+}
+
+.style-card.selected .style-card-bottom h2 {
+  color: #ffffff;
+}
+
+.style-card.selected .style-card-bottom p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+
+/* =========================
+   마지막 Y2K 카드
+========================= */
+
+.style-card:last-child {
+  grid-column: 1 / -1;
+
+  width: calc(50% - 12px);
+
+  justify-self: center;
+}
+
+
+/* =========================
+   카드 상단
+========================= */
+
+.style-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
 .style-number {
-  width: 45px;
+  color: #a78a55;
 
-  color: #777;
+  font-family:
+    "Times New Roman",
+    Georgia,
+    serif;
 
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-
-
-/* 글자 */
-
-.style-card strong {
   font-size: 17px;
-  letter-spacing: 2px;
+
+  letter-spacing: 3px;
+
+  transition: color 0.35s ease;
 }
 
-.style-card p {
-  margin: 6px 0 0;
+.style-check {
+  width: 34px;
+  height: 34px;
 
-  color: #888;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-  font-size: 12px;
+  color: #8b6b34;
+
+  font-size: 22px;
+
+  transition: color 0.35s ease;
+}
+
+
+/* =========================
+   스타일 이름
+========================= */
+
+.style-card-bottom h2 {
+  margin: 0;
+
+  color: #29231b;
+
+  font-family:
+    "Times New Roman",
+    Georgia,
+    serif;
+
+  font-size: 38px;
+  font-weight: 400;
+
+  letter-spacing: 4px;
+
+  line-height: 1.2;
+
+  transition: color 0.35s ease;
+}
+
+
+/* =========================
+   스타일 설명
+========================= */
+
+.style-card-bottom p {
+  margin: 18px 0 0;
+
+  color: #786e5e;
+
+  font-size: 17px;
+  font-weight: 400;
+
+  line-height: 1.6;
+
+  letter-spacing: 0.4px;
+
+  word-break: keep-all;
+
+  transition: color 0.35s ease;
+}
+
+
+/* =========================
+   AI 스타일링 시작 버튼
+========================= */
+
+.style-next-button {
+  width: 580px;
+  height: 108px;
+
+  margin-top: 90px;
+
+  padding: 0 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border: 1px solid rgba(181, 150, 91, 0.72);
+
+  background: transparent;
+
+  color: #7f6337;
+
+  font-size: 20px;
+  font-weight: 500;
+
+  letter-spacing: 5px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    opacity 0.4s ease;
+}
+
+.style-next-button:hover:not(:disabled) {
+  background: #8e6d39;
+
+  border-color: #8e6d39;
+
+  color: #ffffff;
+}
+
+.style-next-button:disabled {
+  border-color: rgba(148, 134, 108, 0.25);
+
+  color: rgba(104, 94, 77, 0.35);
+
+  background: transparent;
+
+  cursor: default;
+}
+
+.style-next-arrow {
+  font-size: 30px;
+  font-weight: 300;
+
+  transition: transform 0.3s ease;
+}
+
+.style-next-button:hover:not(:disabled) .style-next-arrow {
+  transform: translateX(7px);
+}
+
+
+/* =========================
+   1080 × 1920 세로 키오스크
+========================= */
+
+@media (min-width: 900px) and (orientation: portrait) {
+  .style-content {
+    padding-top: 145px;
+  }
+
+  .style-title {
+    font-size: 72px;
+  }
+
+  .style-description {
+    font-size: 21px;
+  }
+
+  .style-grid {
+    margin-top: 115px;
+  }
+
+  .style-card {
+    height: 285px;
+  }
+}
+
+
+/* =========================
+   작은 화면
+========================= */
+
+@media (max-width: 700px) {
+  .style-content {
+    padding: 75px 24px 70px;
+  }
+
+  .style-eyebrow {
+    margin-bottom: 28px;
+
+    font-size: 10px;
+
+    letter-spacing: 4px;
+  }
+
+  .style-title {
+    font-size: 40px;
+
+    letter-spacing: 2px;
+  }
+
+  .style-description {
+    margin-top: 25px;
+
+    font-size: 15px;
+  }
+
+  .style-grid {
+    margin-top: 65px;
+
+    grid-template-columns: 1fr;
+
+    gap: 14px;
+  }
+
+  .style-card {
+    height: 190px;
+
+    padding: 22px;
+  }
+
+  .style-card:last-child {
+    grid-column: auto;
+
+    width: 100%;
+  }
+
+  .style-card-bottom h2 {
+    font-size: 27px;
+  }
+
+  .style-card-bottom p {
+    margin-top: 10px;
+
+    font-size: 13px;
+  }
+
+  .style-next-button {
+    width: 100%;
+    height: 72px;
+
+    margin-top: 50px;
+
+    padding: 0 25px;
+
+    font-size: 13px;
+  }
 }
