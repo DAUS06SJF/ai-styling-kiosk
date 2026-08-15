@@ -525,6 +525,12 @@ button {
   overflow: hidden;
 }
 
+.look-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .mini-head {
   position: absolute;
 
@@ -797,6 +803,20 @@ button {
 .save-button:active {
   transform:
     translateY(0);
+}
+
+.save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.ai-status.error > span {
+  background: #c94b42;
+}
+
+.ai-status.error p {
+  color: #a43d36;
 }
 
 .save-button span {

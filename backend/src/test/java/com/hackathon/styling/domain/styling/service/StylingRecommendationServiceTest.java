@@ -172,6 +172,31 @@ class StylingRecommendationServiceTest {
     }
 
     @Test
+    @DisplayName("스타일별 최신 코디를 제한 개수만큼 조회한다")
+    void findLatestStylingByMood() {
+        Product selected = product(1L, "Aren 백팩", "BACKPACK", "Black", "H-0001");
+        StylingRecommendation styling = new StylingRecommendation(
+                selected,
+                "데일리",
+                "MINIMAL",
+                List.of("검정"),
+                "미니멀 룩",
+                "색을 단순하게 맞추세요.",
+                "http://localhost:8080/generated-stylings/minimal.png"
+        );
+        ReflectionTestUtils.setField(styling, "id", 20L);
+        when(stylingRecommendationRepository.findByMoodIgnoreCaseOrderByIdDesc(
+                eq("MINIMAL"), any(Pageable.class)
+        )).thenReturn(List.of(styling));
+
+        List<StylingRecommendationResponse> responses = service.findLatest(" MINIMAL ", 4);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).id()).isEqualTo(20L);
+        assertThat(responses.get(0).kodi()).endsWith("minimal.png");
+    }
+
+    @Test
     @DisplayName("저장하기를 누르면 코디를 최종 선택 상태로 변경한다")
     void selectStyling() {
         Product selected = product(1L, "Aren 백팩", "BACKPACK", "Black", "H-0001");
