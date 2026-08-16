@@ -170,7 +170,7 @@ function App() {
       return;
     }
 
-    // 선택한 스타일 저장
+    // AI 코디 생성 화면과 마네킹 화면에서 사용
     localStorage.setItem("selectedStyle", selectedStyle);
 
     // 스타일 선택 후 바로 마네킹 화면으로 이동

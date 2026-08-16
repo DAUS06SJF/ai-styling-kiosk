@@ -1,156 +1,67 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  getLatestStylingRecommendations,
+  resolveBackendAssetUrl,
+  selectStylingRecommendation,
+  WEB_SOCKET_URL,
+} from "../shared/stylingApi";
 import "./Mannequin.css";
 
 
 import look1 from "./images/ai-look-01.png";
 
 
-const looks = [
-  {
-    id: 1,
-    name: "LOOK 1",
+const MAX_LOOKS = 4;
 
-    top: {
-      name: "MCM Logo T-Shirt",
-      price: 189000,
-    },
+const moodAliases = {
+  MINIMAL: ["MINIMAL", "미니멀"],
+  STREET: ["STREET", "스트리트"],
+  LUXURY: ["LUXURY", "럭셔리"],
+  VINTAGE: ["VINTAGE", "빈티지"],
+  Y2K: ["Y2K"],
+};
 
-    bottom: {
-      name: "Wide Trousers",
-      price: 129000,
-    },
+function categoryLabel(category = "") {
+  const normalized = category.toUpperCase();
+  if (normalized.includes("BAG") || normalized.includes("BACKPACK")) return "가방";
+  if (normalized.includes("SHOE") || normalized.includes("SNEAKER")) return "신발";
+  if (normalized.includes("PANT") || normalized.includes("TROUSER") || normalized.includes("BOTTOM")) return "하의";
+  if (normalized.includes("ACCESS") || normalized.includes("JEWEL") || normalized.includes("BELT")) return "액세서리";
+  return "상의";
+}
 
-    shoes: {
-      name: "Classic Sneakers",
-      price: 69000,
-    },
+function toLook(recommendation) {
+  const products = [
+    recommendation.selectedProduct,
+    ...(recommendation.recommendations || []).map((item) => item.product),
+  ].filter(Boolean);
+  const uniqueProducts = products.filter(
+    (product, index) => products.findIndex((candidate) => candidate.id === product.id) === index,
+  );
 
-    bag: {
-      name: "Leather Mini Bag",
-      price: 129000,
-    },
+  return {
+    id: recommendation.id,
+    name: recommendation.lookName || `LOOK ${recommendation.id}`,
+    mood: recommendation.mood || "",
+    image: resolveBackendAssetUrl(recommendation.kodi),
+    kodiSelected: recommendation.kodiSelected,
+    selectedProductId: recommendation.selectedProduct?.id,
+    products: uniqueProducts,
+  };
+}
 
-    accessory: {
-      name: "Silver Necklace",
-      price: 49000,
-    },
+function sameMood(responseMood, selectedMood) {
+  const aliases = moodAliases[selectedMood] || [selectedMood];
+  return aliases.some((alias) => alias.toLowerCase() === (responseMood || "").toLowerCase());
+}
 
-    image: look1,
-  },
-
-  {
-    id: 2,
-    name: "LOOK 2",
-
-    top: {
-      name: "MCM Logo T-Shirt",
-      price: 189000,
-    },
-
-    bottom: {
-      name: "Straight Pants",
-      price: 119000,
-    },
-
-    shoes: {
-      name: "Leather Loafer",
-      price: 99000,
-    },
-
-    bag: {
-      name: "Leather Mini Bag",
-      price: 129000,
-    },
-
-    accessory: {
-      name: "Gold Necklace",
-      price: 59000,
-    },
-
-    image: look1,
-  },
-
-  {
-    id: 3,
-    name: "LOOK 3",
-
-    top: {
-      name: "MCM Logo T-Shirt",
-      price: 189000,
-    },
-
-    bottom: {
-      name: "Denim Jeans",
-      price: 119000,
-    },
-
-    shoes: {
-      name: "Retro Sneakers",
-      price: 89000,
-    },
-
-    bag: {
-      name: "Vintage Bag",
-      price: 149000,
-    },
-
-    accessory: {
-      name: "Silver Ring",
-      price: 39000,
-    },
-
-    image: look1,
-  },
-
-  {
-    id: 4,
-    name: "LOOK 4",
-
-    top: {
-      name: "MCM Logo T-Shirt",
-      price: 189000,
-    },
-
-    bottom: {
-      name: "Tailored Pants",
-      price: 159000,
-    },
-
-    shoes: {
-      name: "Pointed Shoes",
-      price: 139000,
-    },
-
-    bag: {
-      name: "Luxury Bag",
-      price: 199000,
-    },
-
-    accessory: {
-      name: "Gold Earrings",
-      price: 79000,
-    },
-
-    image: look1,
-  },
-];
-
-
-// 행거에서 고객이 직접 선택한 상품
-// 나중에 RFID/NFC + DB 데이터로 연결
-const selectedItems = [
-  {
-    category: "상의",
-    name: "MCM Logo T-Shirt",
-    price: 189000,
-  },
-];
-
-
-// ================================
-// 다국어
-// ================================
+function mergeLooks(...lookGroups) {
+  const merged = lookGroups.flat().filter(Boolean);
+  return merged.filter(
+    (look, index) => merged.findIndex((candidate) => candidate.id === look.id) === index,
+  ).slice(0, MAX_LOOKS);
+}
 
 const translations = {
   ko: {
@@ -293,445 +204,221 @@ const translations = {
   },
 };
 
-
 function App() {
-
   const navigate = useNavigate();
+  const location = useLocation();
+  const selectedMood = localStorage.getItem("selectedStyle") || "MINIMAL";
+  const routeRecommendation = location.state?.recommendation;
+  const routeLook = routeRecommendation ? toLook(routeRecommendation) : null;
+  const [looks, setLooks] = useState(() => routeLook ? [routeLook] : []);
+  const [selectedLookId, setSelectedLookId] = useState(routeLook?.id ?? null);
+  const [connectionState, setConnectionState] = useState("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const savedLanguage =
-    localStorage.getItem("language") || "ko";
+  useEffect(() => {
+    const abortController = new AbortController();
 
-  const text =
-    translations[savedLanguage] || translations.ko;
+    async function loadLooks() {
+      try {
+        const recommendations = await getLatestStylingRecommendations(
+          selectedMood,
+          MAX_LOOKS,
+          abortController.signal,
+        );
+        const loadedLooks = (recommendations || []).map(toLook);
+        setLooks((previous) => mergeLooks(previous, loadedLooks));
+        setSelectedLookId((previous) => previous ?? loadedLooks[0]?.id ?? null);
+        setErrorMessage("");
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setErrorMessage(error.message || "백엔드에 연결할 수 없습니다.");
+        }
+      }
+    }
 
-  const [selectedLook, setSelectedLook] = useState(1);
+    loadLooks();
+    return () => abortController.abort();
+  }, [selectedMood]);
 
-  const [isSaving, setIsSaving] = useState(false);
+  useEffect(() => {
+    let socket;
+    let reconnectTimer;
+    let disposed = false;
 
-  const [kodiImageUrl, setKodiImageUrl] = useState("");
+    const connect = () => {
+      setConnectionState("connecting");
+      socket = new WebSocket(WEB_SOCKET_URL);
 
+      socket.onopen = () => setConnectionState("connected");
+      socket.onmessage = (message) => {
+        try {
+          const event = JSON.parse(message.data);
+          if (event.type !== "STYLING_RECOMMENDATION_CREATED"
+            || !event.data
+            || !sameMood(event.data.mood, selectedMood)) {
+            return;
+          }
 
-  // =========================================
-  // 코디 저장
-  // =========================================
+          const newLook = toLook(event.data);
+          setLooks((previous) => mergeLooks([newLook], previous));
+          setSelectedLookId(newLook.id);
+          setErrorMessage("");
+        } catch {
+          setErrorMessage("실시간 코디 데이터를 읽지 못했습니다.");
+        }
+      };
+      socket.onerror = () => setConnectionState("disconnected");
+      socket.onclose = () => {
+        if (!disposed) {
+          setConnectionState("disconnected");
+          reconnectTimer = window.setTimeout(connect, 2000);
+        }
+      };
+    };
 
-  const handleSave = async () => {
-  try {
-    setIsSaving(true);
+    connect();
+    return () => {
+      disposed = true;
+      window.clearTimeout(reconnectTimer);
+      socket?.close();
+    };
+  }, [selectedMood]);
 
-    // 현재 선택한 코디 ID를 백엔드에 전달
-    const imageUrl = await selectKodi(selectedLook);
-
-    console.log("선택된 코디 이미지:", imageUrl);
-
-    setKodiImageUrl(imageUrl);
-
-    // QR 화면으로 이동하면서 AI 코디 이미지 주소 전달
-    navigate("/qr-share", {
-      state: {
-        kodiImageUrl: imageUrl,
-        lookId: selectedLook,
-      },
-    });
-
-  } catch (error) {
-    console.error("코디 저장 실패:", error);
-    alert("코디 저장에 실패했습니다.");
-  } finally {
-    setIsSaving(false);
-  }
-};
-
-
-  const currentLook = looks.find(
-    (look) => look.id === selectedLook
+  const currentLook = looks.find((look) => look.id === selectedLookId) || looks[0];
+  const totalPrice = useMemo(
+    () => currentLook?.products.reduce((sum, product) => sum + (product.price || 0), 0) || 0,
+    [currentLook],
   );
 
+  const handleSave = async () => {
+    if (!currentLook || saving) return;
 
-  // =========================================
-  // 상품 선택 여부
-  // =========================================
-
-  const isSelected = (itemName) => {
-
-    return selectedItems.some(
-      (item) => item.name === itemName
-    );
-
+    setSaving(true);
+    setErrorMessage("");
+    try {
+      const selectedRecommendation = await selectStylingRecommendation(currentLook.id);
+      localStorage.setItem("selectedKodi", selectedRecommendation.kodiSelected);
+      localStorage.setItem("selectedKodiId", String(selectedRecommendation.id));
+      navigate("/qr-share", {
+        state: {
+          kodiSelected: selectedRecommendation.kodiSelected,
+          recommendationId: selectedRecommendation.id,
+        },
+      });
+    } catch (error) {
+      setErrorMessage(error.message || "코디 저장에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-
-  // =========================================
-  // 총 가격
-  // =========================================
-
-  const totalPrice =
-    currentLook.top.price +
-    currentLook.bottom.price +
-    currentLook.shoes.price +
-    currentLook.bag.price +
-    currentLook.accessory.price;
-
+  const statusText = errorMessage
+    || (connectionState === "connected"
+      ? `${selectedMood} 코디를 실시간으로 받고 있습니다.`
+      : "백엔드 실시간 연결을 기다리고 있습니다.");
 
   return (
 
     <div className="mannequin-screen">
-
-
-      {/* ================= HEADER ================= */}
-
       <header className="mannequin-header">
-
         <div className="brand-area">
-
-          <p className="brand-name">
-            {text.brand}
-          </p>
-
-          <h1>
-            {text.title}
-          </h1>
-
+          <p className="brand-name">AI STYLING</p>
+          <h1>AI LIVE MANNEQUIN</h1>
         </div>
-
       </header>
 
-
-      {/* ================= MAIN ================= */}
-
       <main className="mannequin-main">
-
-
-        {/* ================= AI COORDI IMAGE ================= */}
-
         <section className="mannequin-view">
-
-
           <div className="mannequin-stage">
-
-            {currentLook.image ? (
-
+            {currentLook?.image ? (
               <img
                 src={currentLook.image}
                 alt={`${currentLook.name} ${text.aiImageAlt}`}
                 className="ai-look-image"
               />
-
             ) : (
-
               <div className="ai-image-placeholder">
-
-                <span>
-                  {text.aiImageTitle}
-                </span>
-
-                <p>
-                  {text.aiImageDescription}
-                </p>
-
+                <span>AI STYLING</span>
+                <p>{connectionState === "loading" ? "코디를 불러오는 중입니다." : "추천 코디를 기다리고 있습니다."}</p>
               </div>
-
             )}
-
           </div>
 
-
-          {/* ================= AI STATUS ================= */}
-
-          <div className="ai-status">
-
-            <span></span>
-
+          <div className={`ai-status ${errorMessage ? "error" : ""}`}>
+            <span />
             <div>
-
-              <strong>
-                {text.aiLive}
-              </strong>
-
-              <p>
-                {text.aiDescription}
-              </p>
-
+              <strong>AI STYLING {connectionState === "connected" ? "LIVE" : "WAITING"}</strong>
+              <p>{statusText}</p>
             </div>
-
           </div>
-
         </section>
 
-
-        {/* ================= LOOK PANEL ================= */}
-
         <aside className="look-panel">
-
-
           <div className="look-title">
-
-            <span>
-              {text.recommendation}
-            </span>
-
-            <strong>
-              {text.look}
-            </strong>
-
+            <span>AI RECOMMENDATION</span>
+            <strong>LOOK</strong>
           </div>
-
 
           <div className="look-list">
-
-            {looks.map((look) => (
-
+            {looks.map((look, index) => (
               <button
                 key={look.id}
-                className={`look-card ${
-                  selectedLook === look.id
-                    ? "active"
-                    : ""
-                }`}
-                onClick={() =>
-                  setSelectedLook(look.id)
-                }
+                type="button"
+                className={`look-card ${selectedLookId === look.id ? "active" : ""}`}
+                onClick={() => setSelectedLookId(look.id)}
               >
-
-                <div className="look-number">
-                  0{look.id}
-                </div>
-
-
+                <div className="look-number">{String(index + 1).padStart(2, "0")}</div>
                 <div className="look-preview">
-
-                  <img
-                    src={look.image}
-                    alt={look.name}
-                  />
-
+                  <img src={look.image} alt={`${look.name} 미리보기`} />
                 </div>
-
-
-                <span>
-                  {look.name}
-                </span>
-
+                <span>{look.name}</span>
               </button>
-
             ))}
-
           </div>
-
         </aside>
-
       </main>
 
-
-      {/* ================= PRODUCT INFO ================= */}
-
       <section className="product-section">
-
-
         <div className="product-header">
-
           <div>
-
-            <span>
-              {text.selectedLook}
-            </span>
-
-            <strong>
-              {currentLook.name}
-            </strong>
-
+            <span>SELECTED LOOK</span>
+            <strong>{currentLook?.name || "추천 대기 중"}</strong>
           </div>
-
-          <span>
-            5 {text.items}
-          </span>
-
+          <span>{currentLook?.products.length || 0} ITEMS</span>
         </div>
-
 
         <div className="product-list">
-
-
-          {/* ================= 상의 ================= */}
-
-          <div className="product-row">
-
-            <span>
-              {text.top}
-            </span>
-
-            <strong>
-              {currentLook.top.name}
-            </strong>
-
-            <b>
-              ₩
-              {currentLook.top.price.toLocaleString()}
-            </b>
-
-            {isSelected(currentLook.top.name) && (
-
-              <em className="selected-badge">
-                {text.selected}
-              </em>
-
-            )}
-
-          </div>
-
-
-          {/* ================= 하의 ================= */}
-
-          <div className="product-row">
-
-            <span>
-              {text.bottom}
-            </span>
-
-            <strong>
-              {currentLook.bottom.name}
-            </strong>
-
-            <b>
-              ₩
-              {currentLook.bottom.price.toLocaleString()}
-            </b>
-
-            {isSelected(currentLook.bottom.name) && (
-
-              <em className="selected-badge">
-                {text.selected}
-              </em>
-
-            )}
-
-          </div>
-
-
-          {/* ================= 신발 ================= */}
-
-          <div className="product-row">
-
-            <span>
-              {text.shoes}
-            </span>
-
-            <strong>
-              {currentLook.shoes.name}
-            </strong>
-
-            <b>
-              ₩
-              {currentLook.shoes.price.toLocaleString()}
-            </b>
-
-            {isSelected(currentLook.shoes.name) && (
-
-              <em className="selected-badge">
-                {text.selected}
-              </em>
-
-            )}
-
-          </div>
-
-
-          {/* ================= 가방 ================= */}
-
-          <div className="product-row">
-
-            <span>
-              {text.bag}
-            </span>
-
-            <strong>
-              {currentLook.bag.name}
-            </strong>
-
-            <b>
-              ₩
-              {currentLook.bag.price.toLocaleString()}
-            </b>
-
-            {isSelected(currentLook.bag.name) && (
-
-              <em className="selected-badge">
-                {text.selected}
-              </em>
-
-            )}
-
-          </div>
-
-
-          {/* ================= 액세서리 ================= */}
-
-          <div className="product-row">
-
-            <span>
-              {text.accessory}
-            </span>
-
-            <strong>
-              {currentLook.accessory.name}
-            </strong>
-
-            <b>
-              ₩
-              {currentLook.accessory.price.toLocaleString()}
-            </b>
-
-            {isSelected(currentLook.accessory.name) && (
-
-              <em className="selected-badge">
-                {text.selected}
-              </em>
-
-            )}
-
-          </div>
-
-
+          {currentLook?.products.map((product) => (
+            <div className="product-row" key={product.id}>
+              <span>{categoryLabel(product.category)}</span>
+              <strong>{product.name}</strong>
+              {product.id === currentLook.selectedProductId && (
+                <em className="selected-badge">선택</em>
+              )}
+              <b>₩{(product.price || 0).toLocaleString()}</b>
+            </div>
+          ))}
         </div>
-
-
-        {/* ================= TOTAL ================= */}
 
         <div className="total-price">
-
-          <span>
-            {text.total}
-          </span>
-
-          <strong>
-            ₩{totalPrice.toLocaleString()}
-          </strong>
-
+          <span>총 가격</span>
+          <strong>₩{totalPrice.toLocaleString()}</strong>
         </div>
-
       </section>
 
-
-      {/* ================= SAVE ================= */}
-
       <button
+        type="button"
         className="save-button"
+        disabled={!currentLook || saving}
         onClick={handleSave}
-        disabled={isSaving}
       >
-
-        {isSaving
-          ? text.saving
-          : text.save}
-
+        {saving ? "저장 중..." : "저장하기"}
       </button>
-
-
     </div>
 
   );
 
 }
-
 
 export default App;

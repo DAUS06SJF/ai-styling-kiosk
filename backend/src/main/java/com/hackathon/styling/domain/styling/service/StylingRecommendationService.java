@@ -115,6 +115,14 @@ public class StylingRecommendationService {
         return StylingRecommendationResponse.from(styling);
     }
 
+    public List<StylingRecommendationResponse> findLatest(String mood, int limit) {
+        return stylingRecommendationRepository
+                .findByMoodIgnoreCaseOrderByIdDesc(mood.trim(), PageRequest.of(0, limit))
+                .stream()
+                .map(StylingRecommendationResponse::from)
+                .toList();
+    }
+
     @Transactional
     public StylingRecommendationResponse select(Long id) {
         StylingRecommendation styling = stylingRecommendationRepository.findById(id)
