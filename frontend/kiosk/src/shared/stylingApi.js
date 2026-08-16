@@ -7,13 +7,21 @@ export const WEB_SOCKET_URL = import.meta.env.VITE_WS_URL
   || `${API_BASE_URL.replace(/^http/i, "ws")}/ws/styling`;
 
 async function request(path, init) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw error;
+    }
+    throw new Error("백엔드에 연결할 수 없습니다. 서버 실행 상태를 확인해 주세요.");
+  }
   const body = await response.json().catch(() => null);
 
   if (!response.ok || !body?.success) {

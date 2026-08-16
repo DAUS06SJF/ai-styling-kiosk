@@ -200,6 +200,7 @@ function App() {
                 className={`style-card ${
                   isSelected ? "selected" : ""
                 }`}
+                aria-pressed={isSelected}
                 onClick={() => handleStyleSelect(style.id)}
               >
                 <div className="style-card-top">

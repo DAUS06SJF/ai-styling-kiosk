@@ -149,39 +149,13 @@
 }
 
 
-/* =========================
-   마우스 Hover
-========================= */
-
-.style-card:hover {
-  transform: translateY(-4px);
-
-  background: #c3a36a !important;
-  background-color: #c3a36a !important;
-
-  border-color: #c3a36a;
-
-  box-shadow:
-    0 15px 35px rgba(102, 76, 34, 0.1);
-}
-
-
-/* Hover 상태 글씨 */
-
-.style-card:hover .style-number {
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.style-card:hover .style-check {
-  color: #ffffff;
-}
-
-.style-card:hover .style-card-bottom h2 {
-  color: #ffffff;
-}
-
-.style-card:hover .style-card-bottom p {
-  color: rgba(255, 255, 255, 0.85);
+/* 마우스 hover는 선택 상태와 혼동되지 않도록 테두리만 강조합니다. */
+@media (hover: hover) and (pointer: fine) {
+  .style-card:hover:not(.selected) {
+    transform: translateY(-4px);
+    border-color: #a88449;
+    box-shadow: 0 15px 35px rgba(102, 76, 34, 0.1);
+  }
 }
 
 
