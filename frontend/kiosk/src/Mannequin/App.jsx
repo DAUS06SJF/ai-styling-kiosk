@@ -9,9 +9,6 @@ import {
 import "./Mannequin.css";
 
 
-import look1 from "./images/ai-look-01.png";
-
-
 const MAX_LOOKS = 4;
 
 const moodAliases = {
@@ -22,13 +19,40 @@ const moodAliases = {
   Y2K: ["Y2K"],
 };
 
-function categoryLabel(category = "") {
+function categoryLabel(category = "", text) {
   const normalized = category.toUpperCase();
-  if (normalized.includes("BAG") || normalized.includes("BACKPACK")) return "가방";
-  if (normalized.includes("SHOE") || normalized.includes("SNEAKER")) return "신발";
-  if (normalized.includes("PANT") || normalized.includes("TROUSER") || normalized.includes("BOTTOM")) return "하의";
-  if (normalized.includes("ACCESS") || normalized.includes("JEWEL") || normalized.includes("BELT")) return "액세서리";
-  return "상의";
+
+  if (
+    normalized.includes("BAG") ||
+    normalized.includes("BACKPACK")
+  ) {
+    return text.bag;
+  }
+
+  if (
+    normalized.includes("SHOE") ||
+    normalized.includes("SNEAKER")
+  ) {
+    return text.shoes;
+  }
+
+  if (
+    normalized.includes("PANT") ||
+    normalized.includes("TROUSER") ||
+    normalized.includes("BOTTOM")
+  ) {
+    return text.bottom;
+  }
+
+  if (
+    normalized.includes("ACCESS") ||
+    normalized.includes("JEWEL") ||
+    normalized.includes("BELT")
+  ) {
+    return text.accessory;
+  }
+
+  return text.top;
 }
 
 function toLook(recommendation) {
@@ -96,6 +120,9 @@ const translations = {
 
     saveSuccess: "코디가 저장되었습니다.",
     saveFail: "코디 저장에 실패했습니다.",
+
+    loading: "코디를 불러오는 중입니다.",
+    waiting: "추천 코디를 기다리고 있습니다.",
   },
 
   en: {
@@ -131,6 +158,9 @@ const translations = {
 
     saveSuccess: "Your styling has been saved.",
     saveFail: "Failed to save the styling.",
+
+    loading: "Loading styling recommendations.",
+    waiting: "Waiting for styling recommendations.",
   },
 
   zh: {
@@ -149,8 +179,8 @@ const translations = {
     aiImageDescription:
       "AI 搭配图片将在此显示。",
 
-    selectedLook: "SELECTED LOOK",
-    items: "ITEMS",
+    selectedLook: "已选搭配",
+    items: "件商品",
 
     top: "上装",
     bottom: "下装",
@@ -166,6 +196,9 @@ const translations = {
 
     saveSuccess: "搭配已保存。",
     saveFail: "搭配保存失败。",
+
+    loading: "正在加载搭配。",
+    waiting: "正在等待搭配推荐。",
   },
 
   ja: {
@@ -184,8 +217,8 @@ const translations = {
     aiImageDescription:
       "AIコーディネート画像が表示されます。",
 
-    selectedLook: "SELECTED LOOK",
-    items: "ITEMS",
+    selectedLook: "選択したコーデ",
+    items: "アイテム",
 
     top: "トップス",
     bottom: "ボトムス",
@@ -201,12 +234,17 @@ const translations = {
 
     saveSuccess: "コーディネートを保存しました。",
     saveFail: "コーディネートの保存に失敗しました。",
+
+    loading: "コーディネートを読み込んでいます。",
+    waiting: "おすすめコーディネートを待っています。"
   },
 };
 
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const language = localStorage.getItem("language") || "ko";
+  const text = translations[language] || translations.ko;
   const selectedMood = localStorage.getItem("selectedStyle") || "MINIMAL";
   const routeRecommendation = location.state?.recommendation;
   const routeLook = routeRecommendation ? toLook(routeRecommendation) : null;
@@ -323,8 +361,8 @@ function App() {
     <div className="mannequin-screen">
       <header className="mannequin-header">
         <div className="brand-area">
-          <p className="brand-name">AI STYLING</p>
-          <h1>AI LIVE MANNEQUIN</h1>
+          <p className="brand-name">{text.brand}</p>
+          <h1>{text.title}</h1>
         </div>
       </header>
 
@@ -340,7 +378,10 @@ function App() {
             ) : (
               <div className="ai-image-placeholder">
                 <span>AI STYLING</span>
-                <p>{connectionState === "loading" ? "코디를 불러오는 중입니다." : "추천 코디를 기다리고 있습니다."}</p>
+                <p>{connectionState === "loading"
+                    ? text.loading
+                    : text.waiting}
+                </p>
               </div>
             )}
           </div>
@@ -356,8 +397,8 @@ function App() {
 
         <aside className="look-panel">
           <div className="look-title">
-            <span>AI RECOMMENDATION</span>
-            <strong>LOOK</strong>
+            <span>{text.recommendation}</span>
+            <strong>{text.look}</strong>
           </div>
 
           <div className="look-list">
@@ -382,27 +423,29 @@ function App() {
       <section className="product-section">
         <div className="product-header">
           <div>
-            <span>SELECTED LOOK</span>
-            <strong>{currentLook?.name || "추천 대기 중"}</strong>
+           <span>{text.selectedLook}</span>
+           <strong>{currentLook?.name || "LOOK"}</strong>
           </div>
-          <span>{currentLook?.products.length || 0} ITEMS</span>
+
+          <span>
+            {currentLook?.products.length || 0} {text.items}
+          </span>
         </div>
 
         <div className="product-list">
           {currentLook?.products.map((product) => (
             <div className="product-row" key={product.id}>
-              <span>{categoryLabel(product.category)}</span>
+              <span>{categoryLabel(product.category, text)}</span>
               <strong>{product.name}</strong>
               {product.id === currentLook.selectedProductId && (
-                <em className="selected-badge">선택</em>
-              )}
+                <em className="selected-badge">{text.selected}</em>)}
               <b>₩{(product.price || 0).toLocaleString()}</b>
             </div>
           ))}
         </div>
 
         <div className="total-price">
-          <span>총 가격</span>
+          <span>{text.total}</span>
           <strong>₩{totalPrice.toLocaleString()}</strong>
         </div>
       </section>
@@ -411,9 +454,8 @@ function App() {
         type="button"
         className="save-button"
         disabled={!currentLook || saving}
-        onClick={handleSave}
-      >
-        {saving ? "저장 중..." : "저장하기"}
+        onClick={handleSave}>
+        {saving ? text.saving : text.save}
       </button>
     </div>
 
