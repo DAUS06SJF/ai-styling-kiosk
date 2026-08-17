@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./hanger.css";
+import { io } from "socket.io-client";
 
 const translations = {
   ko: {
@@ -47,6 +48,22 @@ const translations = {
 
 function App() {
   const navigate = useNavigate();
+  // 👇 여기서부터 딱 복사해서 navigate 아래에 붙여넣기 👇
+  useEffect(() => {
+    // 5000번 포트의 Node.js 서버와 연결
+    const socket = io('https://daus06sjf-ai-styling-kiosk-eosin.vercel.app'); 
+
+    // 서버가 'open-url' 방송을 하면 실행됨
+    socket.on('open-url', () => {
+      console.log("🎯 센서 신호 도착! 다음 페이지로 이동합니다.");
+      
+      // 다음으로 넘어갈 페이지 주소
+      navigate('/stylechoice'); 
+    });
+
+    return () => socket.disconnect(); // 화면 벗어나면 연결 끊기
+  }, [navigate]);
+  // 👆 여기까지 👆
 
   const savedLanguage = localStorage.getItem("language") || "ko";
   const text = translations[savedLanguage] || translations.ko;
@@ -165,3 +182,4 @@ function App() {
 }
 
 export default App;
+
