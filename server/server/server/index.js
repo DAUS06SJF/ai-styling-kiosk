@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { 
-    origin: "https://daus06sjf-ai-styling-khiosk-eosin.vercel.app", // 내 Vercel 주소 허용
+    origin: "*", // 내 Vercel 주소 허용
     methods: ["GET", "POST"]
   } 
 });
