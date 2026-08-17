@@ -2,7 +2,9 @@
 backend/build/
 backend/.gradle/
 backend/out/
-backend/generated-stylings/
+backend/generated-stylings/*
+!backend/generated-stylings/mannequin-batch-20260816/
+!backend/generated-stylings/mannequin-batch-20260816/*.png
 *.class
 
 # Node

@@ -128,6 +128,7 @@ public class StylingRecommendationService {
         StylingRecommendation styling = stylingRecommendationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STYLING_NOT_FOUND));
         styling.select();
+        stylingRecommendationRepository.flush();
         return StylingRecommendationResponse.from(styling);
     }
 

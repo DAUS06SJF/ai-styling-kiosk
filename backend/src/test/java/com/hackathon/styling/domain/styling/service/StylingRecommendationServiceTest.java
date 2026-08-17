@@ -219,6 +219,7 @@ class StylingRecommendationServiceTest {
                 .isEqualTo("http://localhost:8080/generated-stylings/saved.png");
         assertThat(styling.getKodiSelected())
                 .isEqualTo("http://localhost:8080/generated-stylings/saved.png");
+        verify(stylingRecommendationRepository).flush();
     }
 
     private StylingRecommendationRequest request(String hangerCode) {
