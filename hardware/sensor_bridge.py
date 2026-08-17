@@ -3,7 +3,7 @@ import requests
 import time
 
 PORT = 'COM11' # 아두이노 포트
-SERVER_URL = 'https://ai-styling-kiosk.onrender.com/api/trigger' # Node.js 서버 주소
+SERVER_URL = 'https://ai-styling-kiosk.onrender.com' # Node.js 서버 주소
 
 py_serial = serial.Serial(PORT, 9600, timeout=1)
 print("✅ 아두이노 연결 완료. 센서 대기 중...")

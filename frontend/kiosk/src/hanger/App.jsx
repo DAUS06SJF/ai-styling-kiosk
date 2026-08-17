@@ -51,7 +51,7 @@ function App() {
   // 👇 여기서부터 딱 복사해서 navigate 아래에 붙여넣기 👇
   useEffect(() => {
     // 5000번 포트의 Node.js 서버와 연결
-    const socket = io('https://ai-styling-kiosk.onrender.com/api/trigger'); 
+    const socket = io('https://ai-styling-kiosk.onrender.com'); 
 
     // 서버가 'open-url' 방송을 하면 실행됨
     socket.on('open-url', () => {
