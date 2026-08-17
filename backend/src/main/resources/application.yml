@@ -36,11 +36,12 @@ spring:
     default-property-inclusion: non_null
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Render 등 PaaS는 PORT를 주입하고, 로컬에서는 기존 SERVER_PORT를 사용한다.
+  port: ${PORT:${SERVER_PORT:8080}}
 
 # 키오스크 / 관리자 / 모바일 3개 프론트가 붙는 주소
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,https://daus06sjf-ai-styling-kiosk-eosin.vercel.app}
 
 # OpenAI Responses API. 키는 반드시 환경변수로만 주입한다.
 openai:

@@ -336,11 +336,16 @@ function App() {
     setErrorMessage("");
     try {
       const selectedRecommendation = await selectStylingRecommendation(currentLook.id);
-      localStorage.setItem("selectedKodi", selectedRecommendation.kodiSelected);
+      if (!selectedRecommendation?.kodiSelected) {
+        throw new Error("선택한 코디 이미지가 DB에 저장되지 않았습니다.");
+      }
+
+      const selectedKodi = resolveBackendAssetUrl(selectedRecommendation.kodiSelected);
+      localStorage.setItem("selectedKodi", selectedKodi);
       localStorage.setItem("selectedKodiId", String(selectedRecommendation.id));
       navigate("/qr-share", {
         state: {
-          kodiSelected: selectedRecommendation.kodiSelected,
+          kodiSelected: selectedKodi,
           recommendationId: selectedRecommendation.id,
         },
       });
