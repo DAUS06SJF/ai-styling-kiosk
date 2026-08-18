@@ -27,6 +27,8 @@ public class OpenAiStylingClient implements StylingAiClient {
             selectedProduct와 자연스럽게 어울리는 상품을 candidateProducts에서만 고르세요.
             candidateProducts에 없는 productId를 만들거나 selectedProduct 자체를 추천하면 안 됩니다.
             색상 조화, 카테고리 조합, 사용 상황을 고려하고 같은 종류만 반복해서 고르지 마세요.
+            mood가 나타내는 스타일을 가장 중요한 기준으로 적용하세요.
+            variantIndex에 맞춰 같은 요청의 다른 코디와 구분되는 독립적인 상품 조합을 만드세요.
             추천 이유와 스타일링 팁은 키오스크 고객이 바로 이해할 수 있는 자연스러운 한국어로 작성하세요.
             """;
 

@@ -8,7 +8,9 @@ public record StylingAiInput(
         String occasion,
         String mood,
         List<String> preferredColors,
-        int recommendationCount
+        int recommendationCount,
+        int variantIndex,
+        int variantCount
 ) {
     public record AiProduct(
             Long productId,

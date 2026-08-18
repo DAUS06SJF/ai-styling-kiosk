@@ -21,9 +21,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +36,7 @@ import java.util.Map;
 public class StylingRecommendationService {
 
     private static final int DESCRIPTION_LIMIT = 240;
+    private static final int LOOK_VARIANT_COUNT = 4;
 
     private final ProductRepository productRepository;
     private final StylingRecommendationRepository stylingRecommendationRepository;
@@ -52,45 +58,116 @@ public class StylingRecommendationService {
             throw new BusinessException(ErrorCode.STYLING_CANDIDATE_NOT_FOUND);
         }
 
-        StylingAiInput aiInput = new StylingAiInput(
-                toAiProduct(selectedProduct),
-                candidates.stream().map(this::toAiProduct).toList(),
-                normalize(request.occasion()),
-                normalize(request.mood()),
-                request.preferredColors() == null
-                        ? List.of()
-                        : request.preferredColors().stream().map(String::trim).toList(),
-                properties.getRecommendationCount()
-        );
-
-        StylingAiOutput aiOutput = stylingAiClient.generate(aiInput);
-        List<StylingRecommendationResponse.RecommendedProduct> recommendations =
-                hydrateAndValidate(aiOutput, candidates);
-
-        if (recommendations.isEmpty()) {
-            throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
-                    "AI가 현재 재고에서 사용할 수 있는 상품을 추천하지 못했습니다.");
+        List<GeneratedLook> generatedLooks = generateLooks(request, selectedProduct, candidates);
+        StylingRecommendationResponse latestResponse = null;
+        for (GeneratedLook generatedLook : generatedLooks) {
+            latestResponse = saveLook(request, selectedProduct, generatedLook);
         }
+        return latestResponse;
+    }
 
-        List<Product> recommendedProducts = recommendations.stream()
-                .map(recommendation -> findRecommendedProduct(candidates, recommendation))
+    private List<GeneratedLook> generateLooks(
+            StylingRecommendationRequest request,
+            Product selectedProduct,
+            List<Product> candidates
+    ) {
+        Set<Long> usedProductIds = new LinkedHashSet<>();
+        List<PendingLook> pendingLooks = new ArrayList<>(LOOK_VARIANT_COUNT);
+
+        for (int variantIndex = 1; variantIndex <= LOOK_VARIANT_COUNT; variantIndex++) {
+            List<Product> unusedCandidates = candidates.stream()
+                    .filter(product -> !usedProductIds.contains(product.getId()))
+                    .toList();
+            List<Product> availableCandidates = unusedCandidates.isEmpty()
+                    ? candidates
+                    : unusedCandidates;
+
+            StylingAiInput aiInput = new StylingAiInput(
+                    toAiProduct(selectedProduct),
+                    availableCandidates.stream().map(this::toAiProduct).toList(),
+                    normalize(request.occasion()),
+                    normalize(request.mood()),
+                    normalizeColors(request.preferredColors()),
+                    properties.getRecommendationCount(),
+                    variantIndex,
+                    LOOK_VARIANT_COUNT
+            );
+            StylingAiOutput aiOutput = stylingAiClient.generate(aiInput);
+            List<StylingRecommendationResponse.RecommendedProduct> recommendations =
+                    hydrateAndValidate(aiOutput, availableCandidates);
+
+            if (recommendations.isEmpty()) {
+                throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
+                        "AI가 현재 재고에서 사용할 수 있는 상품을 추천하지 못했습니다.");
+            }
+
+            List<Product> recommendedProducts = recommendations.stream()
+                    .map(recommendation -> findRecommendedProduct(availableCandidates, recommendation))
+                    .toList();
+            recommendedProducts.forEach(product -> usedProductIds.add(product.getId()));
+
+            StylingImageInput imageInput = new StylingImageInput(
+                    normalize(aiOutput.lookName()),
+                    normalize(aiOutput.stylingTip()),
+                    normalize(request.occasion()),
+                    normalize(request.mood()),
+                    normalizeColors(request.preferredColors()),
+                    variantIndex,
+                    LOOK_VARIANT_COUNT,
+                    toImageProduct(selectedProduct, ""),
+                    recommendedProducts.stream()
+                            .map(product -> toImageProduct(
+                                    product,
+                                    recommendationReason(recommendations, product.getId())
+                            ))
+                            .toList()
+            );
+            pendingLooks.add(new PendingLook(
+                    aiOutput,
+                    recommendations,
+                    recommendedProducts,
+                    imageInput
+            ));
+        }
+        return generateImages(pendingLooks);
+    }
+
+    private List<GeneratedLook> generateImages(List<PendingLook> pendingLooks) {
+        List<CompletableFuture<byte[]>> imageTasks = pendingLooks.stream()
+                .map(pendingLook -> CompletableFuture.supplyAsync(
+                        () -> stylingImageClient.generate(pendingLook.imageInput())
+                ))
                 .toList();
-        StylingImageInput imageInput = new StylingImageInput(
-                normalize(aiOutput.lookName()),
-                normalize(aiOutput.stylingTip()),
-                normalize(request.occasion()),
-                normalize(request.mood()),
-                normalizeColors(request.preferredColors()),
-                toImageProduct(selectedProduct, ""),
-                recommendedProducts.stream()
-                        .map(product -> toImageProduct(
-                                product,
-                                recommendationReason(recommendations, product.getId())
-                        ))
-                        .toList()
-        );
-        String kodi = stylingImageStorage.store(stylingImageClient.generate(imageInput));
 
+        List<GeneratedLook> generatedLooks = new ArrayList<>(pendingLooks.size());
+        for (int index = 0; index < pendingLooks.size(); index++) {
+            PendingLook pendingLook = pendingLooks.get(index);
+            try {
+                generatedLooks.add(new GeneratedLook(
+                        pendingLook.aiOutput(),
+                        pendingLook.recommendations(),
+                        pendingLook.recommendedProducts(),
+                        imageTasks.get(index).join()
+                ));
+            } catch (CompletionException exception) {
+                imageTasks.forEach(task -> task.cancel(true));
+                if (exception.getCause() instanceof BusinessException businessException) {
+                    throw businessException;
+                }
+                throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
+                        "AI 코디 이미지 생성 작업을 완료하지 못했습니다.");
+            }
+        }
+        return generatedLooks;
+    }
+
+    private StylingRecommendationResponse saveLook(
+            StylingRecommendationRequest request,
+            Product selectedProduct,
+            GeneratedLook generatedLook
+    ) {
+        String kodi = stylingImageStorage.store(generatedLook.imageBytes());
+        StylingAiOutput aiOutput = generatedLook.aiOutput();
         StylingRecommendation styling = new StylingRecommendation(
                 selectedProduct,
                 normalize(request.occasion()),
@@ -100,11 +177,15 @@ public class StylingRecommendationService {
                 normalize(aiOutput.stylingTip()),
                 kodi
         );
-        for (int index = 0; index < recommendations.size(); index++) {
-            StylingRecommendationResponse.RecommendedProduct recommendation = recommendations.get(index);
-            styling.addItem(recommendedProducts.get(index), recommendation.reason(), index + 1);
+        for (int index = 0; index < generatedLook.recommendations().size(); index++) {
+            StylingRecommendationResponse.RecommendedProduct recommendation =
+                    generatedLook.recommendations().get(index);
+            styling.addItem(
+                    generatedLook.recommendedProducts().get(index),
+                    recommendation.reason(),
+                    index + 1
+            );
         }
-
         stylingRecommendationRepository.save(styling);
         return StylingRecommendationResponse.from(styling);
     }
@@ -168,10 +249,12 @@ public class StylingRecommendationService {
 
     private StylingImageInput.ImageProduct toImageProduct(Product product, String recommendationReason) {
         return new StylingImageInput.ImageProduct(
+                product.getId(),
                 product.getName(),
                 product.getCategory(),
                 product.getColor(),
                 truncate(product.getDescription()),
+                product.getImageUrl(),
                 recommendationReason
         );
     }
@@ -224,5 +307,21 @@ public class StylingRecommendationService {
     private String normalizeReason(String value) {
         String normalized = normalize(value);
         return normalized.isBlank() ? "선택한 상품과 조화로운 코디 아이템입니다." : normalized;
+    }
+
+    private record GeneratedLook(
+            StylingAiOutput aiOutput,
+            List<StylingRecommendationResponse.RecommendedProduct> recommendations,
+            List<Product> recommendedProducts,
+            byte[] imageBytes
+    ) {
+    }
+
+    private record PendingLook(
+            StylingAiOutput aiOutput,
+            List<StylingRecommendationResponse.RecommendedProduct> recommendations,
+            List<Product> recommendedProducts,
+            StylingImageInput imageInput
+    ) {
     }
 }

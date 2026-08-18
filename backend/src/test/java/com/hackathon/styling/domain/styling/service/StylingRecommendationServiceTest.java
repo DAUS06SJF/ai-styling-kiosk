@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -70,44 +71,68 @@ class StylingRecommendationServiceTest {
     }
 
     @Test
-    @DisplayName("행거 상품과 재고 후보를 이용해 AI 코디를 생성한다")
+    @DisplayName("행거 상품을 고정한 서로 다른 AI 코디 네 건을 생성한다")
     void recommendStyling() {
         Product selected = product(1L, "Aren 백팩", "BACKPACK", "Black", "H-0001");
         Product shirt = product(2L, "로고 티셔츠", "TSHIRT_TOP", "White", "H-0002");
         Product shoes = product(3L, "레더 스니커즈", "SHOES", "Black", "H-0003");
+        Product pants = product(4L, "와이드 팬츠", "PANTS", "Gray", "H-0004");
+        Product cap = product(5L, "로고 캡", "CAP", "Black", "H-0005");
 
         when(productRepository.findByHangerCodeIgnoreCase("H-0001")).thenReturn(Optional.of(selected));
         when(productRepository.findAvailableForStyling(eq(1L), any(Pageable.class)))
-                .thenReturn(List.of(shirt, shoes));
-        when(stylingAiClient.generate(any(StylingAiInput.class))).thenReturn(new StylingAiOutput(
-                "모던 모노크롬 룩",
-                "화이트 상의로 대비를 주세요.",
-                List.of(
-                        new StylingAiOutput.Recommendation(2L, "검정 백팩과 선명한 대비를 만듭니다."),
-                        new StylingAiOutput.Recommendation(999L, "존재하지 않는 상품"),
-                        new StylingAiOutput.Recommendation(2L, "중복 추천")
-                )
-        ));
+                .thenReturn(List.of(shirt, shoes, pants, cap));
+        when(stylingAiClient.generate(any(StylingAiInput.class))).thenAnswer(invocation -> {
+            StylingAiInput input = invocation.getArgument(0);
+            Long productId = input.candidateProducts().get(0).productId();
+            return new StylingAiOutput(
+                    "모던 모노크롬 룩 " + input.variantIndex(),
+                    "선택 상품을 유지한 서로 다른 조합입니다.",
+                    List.of(new StylingAiOutput.Recommendation(productId, "선택 상품과 조화롭습니다."))
+            );
+        });
         when(stylingImageClient.generate(any())).thenReturn(new byte[]{1, 2, 3});
         when(stylingImageStorage.store(any(byte[].class)))
-                .thenReturn("http://localhost:8080/generated-stylings/test.png");
+                .thenReturn(
+                        "http://localhost:8080/generated-stylings/test-1.png",
+                        "http://localhost:8080/generated-stylings/test-2.png",
+                        "http://localhost:8080/generated-stylings/test-3.png",
+                        "http://localhost:8080/generated-stylings/test-4.png"
+                );
 
         StylingRecommendationResponse response = service.recommend(request(" H-0001 "));
 
-        assertThat(response.lookName()).isEqualTo("모던 모노크롬 룩");
+        assertThat(response.lookName()).isEqualTo("모던 모노크롬 룩 4");
         assertThat(response.selectedProduct().getId()).isEqualTo(1L);
         assertThat(response.occasion()).isEqualTo("데이트");
         assertThat(response.preferredColors()).containsExactly("검정", "흰색");
         assertThat(response.recommendations()).hasSize(1);
-        assertThat(response.recommendations().get(0).product().getId()).isEqualTo(2L);
-        assertThat(response.kodi()).isEqualTo("http://localhost:8080/generated-stylings/test.png");
+        assertThat(response.recommendations().get(0).product().getId()).isEqualTo(5L);
+        assertThat(response.kodi()).isEqualTo("http://localhost:8080/generated-stylings/test-4.png");
         assertThat(response.kodiSelected()).isNull();
-        verify(stylingRecommendationRepository).save(any(StylingRecommendation.class));
+        verify(stylingRecommendationRepository, times(4)).save(any(StylingRecommendation.class));
+        verify(stylingImageStorage, times(4)).store(any(byte[].class));
 
         ArgumentCaptor<StylingAiInput> captor = ArgumentCaptor.forClass(StylingAiInput.class);
-        verify(stylingAiClient).generate(captor.capture());
-        assertThat(captor.getValue().candidateProducts()).extracting(StylingAiInput.AiProduct::productId)
-                .containsExactly(2L, 3L);
+        verify(stylingAiClient, times(4)).generate(captor.capture());
+        assertThat(captor.getAllValues()).extracting(StylingAiInput::variantIndex)
+                .containsExactly(1, 2, 3, 4);
+        assertThat(captor.getAllValues().get(0).candidateProducts())
+                .extracting(StylingAiInput.AiProduct::productId)
+                .containsExactly(2L, 3L, 4L, 5L);
+        assertThat(captor.getAllValues().get(3).candidateProducts())
+                .extracting(StylingAiInput.AiProduct::productId)
+                .containsExactly(5L);
+
+        ArgumentCaptor<com.hackathon.styling.domain.styling.client.StylingImageInput> imageCaptor =
+                ArgumentCaptor.forClass(com.hackathon.styling.domain.styling.client.StylingImageInput.class);
+        verify(stylingImageClient, times(4)).generate(imageCaptor.capture());
+        assertThat(imageCaptor.getAllValues()).extracting(
+                com.hackathon.styling.domain.styling.client.StylingImageInput::variantIndex
+        ).containsExactlyInAnyOrder(1, 2, 3, 4);
+        assertThat(imageCaptor.getAllValues())
+                .allSatisfy(input -> assertThat(input.selectedProduct().imageUrl())
+                        .isEqualTo("https://example.com/product.jpg"));
     }
 
     @Test
