@@ -31,6 +31,28 @@ class OpenAiStylingImageClientTest {
     Path tempDirectory;
 
     @Test
+    @DisplayName("폴백 전용 모드에서는 OpenAI 호출 없이 서버 기본 이미지를 반환한다")
+    void useBundledImageImmediatelyInFallbackOnlyMode() throws Exception {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://api.openai.com");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        OpenAiProperties properties = new OpenAiProperties();
+        properties.setImageFallbackOnly(true);
+        byte[] expectedImage = "fallback-only".getBytes(StandardCharsets.UTF_8);
+        Path fallbackDirectory = Files.createDirectories(
+                tempDirectory.resolve("mannequin-batch-20260816")
+        );
+        Files.write(fallbackDirectory.resolve("minimal-01.png"), expectedImage);
+        OpenAiStylingImageClient client = new OpenAiStylingImageClient(
+                builder.build(), properties, builtInFallback(tempDirectory)
+        );
+
+        byte[] image = client.generate(input());
+
+        assertThat(image).isEqualTo(expectedImage);
+        server.verify();
+    }
+
+    @Test
     @DisplayName("상품 원본을 참조 이미지로 전달하고 생성 결과를 바이트로 변환한다")
     void generateStylingImage() {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://api.openai.com");

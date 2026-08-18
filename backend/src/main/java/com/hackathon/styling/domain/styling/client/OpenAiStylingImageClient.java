@@ -42,6 +42,10 @@ public class OpenAiStylingImageClient implements StylingImageClient {
 
     @Override
     public byte[] generate(StylingImageInput input) {
+        if (properties.isImageFallbackOnly()) {
+            return builtInFallback.load(input);
+        }
+
         if (properties.getApiKey() == null || properties.getApiKey().isBlank()) {
             throw new BusinessException(ErrorCode.OPENAI_NOT_CONFIGURED,
                     "OPENAI_API_KEY 환경변수를 설정한 뒤 다시 요청해 주세요.");

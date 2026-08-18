@@ -22,6 +22,7 @@ public class OpenAiProperties {
     private String imageModel = "gpt-image-2";
     private String imageSize = "1024x1024";
     private String imageQuality = "medium";
+    private boolean imageFallbackOnly = false;
     private String baseUrl = "https://api.openai.com";
     private Duration connectTimeout = Duration.ofSeconds(3);
     private Duration readTimeout = Duration.ofSeconds(120);
