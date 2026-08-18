@@ -27,8 +27,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 @Service
 @RequiredArgsConstructor
@@ -133,30 +131,15 @@ public class StylingRecommendationService {
     }
 
     private List<GeneratedLook> generateImages(List<PendingLook> pendingLooks) {
-        List<CompletableFuture<byte[]>> imageTasks = pendingLooks.stream()
-                .map(pendingLook -> CompletableFuture.supplyAsync(
-                        () -> stylingImageClient.generate(pendingLook.imageInput())
-                ))
-                .toList();
-
         List<GeneratedLook> generatedLooks = new ArrayList<>(pendingLooks.size());
-        for (int index = 0; index < pendingLooks.size(); index++) {
-            PendingLook pendingLook = pendingLooks.get(index);
-            try {
-                generatedLooks.add(new GeneratedLook(
-                        pendingLook.aiOutput(),
-                        pendingLook.recommendations(),
-                        pendingLook.recommendedProducts(),
-                        imageTasks.get(index).join()
-                ));
-            } catch (CompletionException exception) {
-                imageTasks.forEach(task -> task.cancel(true));
-                if (exception.getCause() instanceof BusinessException businessException) {
-                    throw businessException;
-                }
-                throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
-                        "AI 코디 이미지 생성 작업을 완료하지 못했습니다.");
-            }
+        // 이미지 편집 API의 동시 생성 한도를 넘기지 않도록 4개 룩을 순서대로 생성한다.
+        for (PendingLook pendingLook : pendingLooks) {
+            generatedLooks.add(new GeneratedLook(
+                    pendingLook.aiOutput(),
+                    pendingLook.recommendations(),
+                    pendingLook.recommendedProducts(),
+                    stylingImageClient.generate(pendingLook.imageInput())
+            ));
         }
         return generatedLooks;
     }
