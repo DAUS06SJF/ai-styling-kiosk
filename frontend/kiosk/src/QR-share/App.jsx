@@ -1,80 +1,115 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-function App() {
-  const [qrImage, setQrImage] = useState('');
-  const [statusText, setStatusText] = useState('QR 연결 대기 중...');
-  const [currentPhotoId, setCurrentPhotoId] = useState(null);
+const QR_API_URL = import.meta.env.VITE_QR_API_URL
+  || "https://qr-site-e7tc.vercel.app/api/prepare-qr";
 
-  // ⚠️ 백엔드 API 주소 (동일한 공유기/네트워크 환경 기준)
-  const API_URL = 'http://172.30.1.26:3000/api/latest-qr';
+function App() {
+  const location = useLocation();
+  const [qrImage, setQrImage] = useState("");
+  const [statusText, setStatusText] = useState("QR 코드를 준비하고 있습니다...");
+  const [retryCount, setRetryCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const selectedPhotoUrl = location.state?.kodiSelected
+    || localStorage.getItem("selectedKodi")
+    || "";
+  const recommendationId = location.state?.recommendationId
+    || localStorage.getItem("selectedKodiId")
+    || "";
 
   useEffect(() => {
-    const fetchLatestQR = async () => {
-      try {
-        const response = await fetch(API_URL);
-        const result = await response.json();
+    if (!selectedPhotoUrl) {
+      return undefined;
+    }
 
-        if (result.success && result.data) {
-          // 새로운 photoId가 들어왔을 때만 상태 업데이트
-          if (currentPhotoId !== result.data.photoId) {
-            setCurrentPhotoId(result.data.photoId);
-            setQrImage(result.data.qrCodeImage);
-            setStatusText('📱 스캔하여 사진 저장');
-          }
-        } else {
-          setStatusText('아직 생성된 QR이 없습니다.');
+    const controller = new AbortController();
+
+    const prepareQr = async () => {
+      setLoading(true);
+      setQrImage("");
+      setStatusText("사진을 저장하고 QR 코드를 만들고 있습니다...");
+
+      try {
+        const response = await fetch(QR_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ photoUrl: selectedPhotoUrl, recommendationId }),
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.success || !result?.data?.qrCodeImage) {
+          throw new Error(result?.message || "QR 서버가 요청을 처리하지 못했습니다.");
         }
+
+        setQrImage(result.data.qrCodeImage);
+        setStatusText("휴대폰으로 스캔하여 사진을 저장하세요.");
       } catch (error) {
-        console.error('QR 통신 오류:', error);
-        setStatusText('서버 연결 실패');
+        if (error?.name === "AbortError") return;
+        console.error("QR 생성 오류:", error);
+        setStatusText(error.message || "QR 서버에 연결하지 못했습니다.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
-    // 처음 켜졌을 때 1회 즉시 실행
-    fetchLatestQR();
-
-    // 2초마다 백엔드 서버에서 최신 QR 불러오기
-    const interval = setInterval(fetchLatestQR, 2000);
-
-    // 컴포넌트 종료 시 타이머 해제
-    return () => clearInterval(interval);
-  }, [currentPhotoId]);
+    prepareQr();
+    return () => controller.abort();
+  }, [selectedPhotoUrl, recommendationId, retryCount]);
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      {/* 헤더 부분 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <h1 style={{ margin: 0, fontSize: '28px', color: '#333' }}>
-          AI LIVE MANNEQUIN
-        </h1>
+    <div style={{
+      minHeight: "100vh",
+      padding: "40px 20px",
+      fontFamily: "sans-serif",
+      background: "#f7f5ef",
+      color: "#4a3b32",
+      textAlign: "center",
+    }}>
+      <h1 style={{ margin: "0 0 12px", fontSize: "32px" }}>AI LIVE MANNEQUIN</h1>
+      <p style={{ margin: "0 0 28px", fontSize: "16px" }}>
+        {selectedPhotoUrl
+          ? statusText
+          : "선택된 코디 사진을 찾을 수 없습니다. 이전 화면에서 다시 선택해 주세요."}
+      </p>
 
-        {/* QR 코드 표시 영역 */}
-        {qrImage && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img
-              src={qrImage}
-              alt="최신 QR 코드"
-              style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '8px',
-                border: '1px solid #ddd',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-              }}
-            />
-            <span style={{ fontSize: '13px', color: '#555', fontWeight: 'bold' }}>
-              {statusText}
-            </span>
-          </div>
-        )}
-      </div>
+      {qrImage && (
+        <img
+          src={qrImage}
+          alt="사진 저장 QR 코드"
+          style={{
+            width: "260px",
+            height: "260px",
+            padding: "12px",
+            borderRadius: "18px",
+            background: "#fff",
+            boxShadow: "0 8px 30px rgba(74, 59, 50, 0.12)",
+          }}
+        />
+      )}
 
-      {/* 메인 콘텐츠 들어갈 영역 */}
-      <div style={{ marginTop: '20px' }}>
-        {/* 상대방이 여기에 기존 화면 요소(룩북, 의류 목록 등)를 배치하면 됩니다. */}
-      </div>
+      {!loading && !qrImage && selectedPhotoUrl && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setRetryCount((count) => count + 1)}
+            style={{
+              padding: "12px 22px",
+              border: 0,
+              borderRadius: "12px",
+              background: "#6b5344",
+              color: "#fff",
+              fontSize: "15px",
+              cursor: "pointer",
+            }}
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
 export default App;
