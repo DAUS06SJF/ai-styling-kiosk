@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-@RestController
+@RestController("rootHealthController")
 public class HealthController {
 
     @GetMapping("/")
