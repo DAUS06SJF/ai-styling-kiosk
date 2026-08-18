@@ -24,10 +24,14 @@ class BuiltInStylingImageFallbackTest {
         Files.write(fallbackDirectory.resolve("y2k-02-consistent.png"), expected);
         StylingImageProperties properties = new StylingImageProperties();
         properties.setStorageDirectory(tempDirectory.toString());
+        properties.setPublicBaseUrl("https://preview.example/generated-stylings");
 
-        byte[] actual = new BuiltInStylingImageFallback(properties).load(input("Y2K", 2));
+        BuiltInStylingImageFallback fallback = new BuiltInStylingImageFallback(properties);
+        byte[] actual = fallback.load(input("Y2K", 2));
 
         assertThat(actual).isEqualTo(expected);
+        assertThat(fallback.publicUrl(input("Y2K", 2)))
+                .isEqualTo("https://preview.example/generated-stylings/mannequin-batch-20260816/y2k-02-consistent.png");
     }
 
     private StylingImageInput input(String mood, int variant) {

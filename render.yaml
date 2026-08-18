@@ -32,5 +32,3 @@ services:
         value: https://daus06sjf-ai-styling-kiosk-eosin.vercel.app
       - key: STYLING_IMAGE_STORAGE_DIRECTORY
         value: /app/generated-stylings
-      - key: STYLING_IMAGE_PUBLIC_BASE_URL
-        value: https://daus06sjf-ai-styling-kiosk-backend.onrender.com/generated-stylings

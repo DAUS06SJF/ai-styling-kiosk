@@ -62,7 +62,7 @@ openai:
 styling:
   images:
     storage-directory: ${STYLING_IMAGE_STORAGE_DIRECTORY:./generated-stylings}
-    public-base-url: ${STYLING_IMAGE_PUBLIC_BASE_URL:http://localhost:8080/generated-stylings}
+    public-base-url: "${STYLING_IMAGE_PUBLIC_BASE_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}/generated-stylings}"
 
 logging:
   level:

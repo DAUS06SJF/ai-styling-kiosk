@@ -6,6 +6,7 @@ import com.hackathon.styling.domain.styling.client.StylingAiClient;
 import com.hackathon.styling.domain.styling.client.StylingAiInput;
 import com.hackathon.styling.domain.styling.client.StylingAiOutput;
 import com.hackathon.styling.domain.styling.client.StylingImageClient;
+import com.hackathon.styling.domain.styling.client.BuiltInStylingImageFallback;
 import com.hackathon.styling.domain.styling.config.OpenAiProperties;
 import com.hackathon.styling.domain.styling.domain.StylingRecommendation;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationRequest;
@@ -53,6 +54,9 @@ class StylingRecommendationServiceTest {
     @Mock
     private StylingImageStorage stylingImageStorage;
 
+    @Mock
+    private BuiltInStylingImageFallback builtInStylingImageFallback;
+
     private StylingRecommendationService service;
 
     @BeforeEach
@@ -66,6 +70,7 @@ class StylingRecommendationServiceTest {
                 stylingAiClient,
                 stylingImageClient,
                 stylingImageStorage,
+                builtInStylingImageFallback,
                 properties
         );
     }

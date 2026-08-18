@@ -8,6 +8,7 @@ import com.hackathon.styling.domain.styling.client.StylingAiInput;
 import com.hackathon.styling.domain.styling.client.StylingAiOutput;
 import com.hackathon.styling.domain.styling.client.StylingImageClient;
 import com.hackathon.styling.domain.styling.client.StylingImageInput;
+import com.hackathon.styling.domain.styling.client.BuiltInStylingImageFallback;
 import com.hackathon.styling.domain.styling.config.OpenAiProperties;
 import com.hackathon.styling.domain.styling.domain.StylingRecommendation;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationRequest;
@@ -41,6 +42,7 @@ public class StylingRecommendationService {
     private final StylingAiClient stylingAiClient;
     private final StylingImageClient stylingImageClient;
     private final StylingImageStorage stylingImageStorage;
+    private final BuiltInStylingImageFallback builtInStylingImageFallback;
     private final OpenAiProperties properties;
 
     @Transactional
@@ -138,6 +140,7 @@ public class StylingRecommendationService {
                     pendingLook.aiOutput(),
                     pendingLook.recommendations(),
                     pendingLook.recommendedProducts(),
+                    pendingLook.imageInput(),
                     stylingImageClient.generate(pendingLook.imageInput())
             ));
         }
@@ -149,7 +152,9 @@ public class StylingRecommendationService {
             Product selectedProduct,
             GeneratedLook generatedLook
     ) {
-        String kodi = stylingImageStorage.store(generatedLook.imageBytes());
+        String kodi = properties.isImageFallbackOnly()
+                ? builtInStylingImageFallback.publicUrl(generatedLook.imageInput())
+                : stylingImageStorage.store(generatedLook.imageBytes());
         StylingAiOutput aiOutput = generatedLook.aiOutput();
         StylingRecommendation styling = new StylingRecommendation(
                 selectedProduct,
@@ -296,6 +301,7 @@ public class StylingRecommendationService {
             StylingAiOutput aiOutput,
             List<StylingRecommendationResponse.RecommendedProduct> recommendations,
             List<Product> recommendedProducts,
+            StylingImageInput imageInput,
             byte[] imageBytes
     ) {
     }

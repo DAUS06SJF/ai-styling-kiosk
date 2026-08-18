@@ -44,6 +44,14 @@ public class BuiltInStylingImageFallback {
         }
     }
 
+    public String publicUrl(StylingImageInput input) {
+        String style = resolveStyle(input.mood(), input.lookName());
+        int variant = Math.max(1, Math.min(4, input.variantIndex()));
+        return stripTrailingSlash(properties.getPublicBaseUrl())
+                + "/" + FALLBACK_DIRECTORY
+                + "/" + fileName(style, variant);
+    }
+
     private String resolveStyle(String mood, String lookName) {
         String value = ((mood == null ? "" : mood) + " " + (lookName == null ? "" : lookName))
                 .toLowerCase(Locale.ROOT);
@@ -72,5 +80,9 @@ public class BuiltInStylingImageFallback {
     private BusinessException fallbackUnavailable() {
         return new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
                 "OpenAI 이미지 생성 한도가 제한되었고 임시 코디 이미지도 사용할 수 없습니다.");
+    }
+
+    private String stripTrailingSlash(String value) {
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 }
