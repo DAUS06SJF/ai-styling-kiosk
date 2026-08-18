@@ -16,6 +16,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -59,6 +60,17 @@ public class OpenAiStylingImageClient implements StylingImageClient {
             return Base64.getDecoder().decode(imageBase64);
         } catch (BusinessException exception) {
             throw exception;
+        } catch (RestClientResponseException exception) {
+            HttpHeaders responseHeaders = exception.getResponseHeaders();
+            String requestId = responseHeaders == null
+                    ? ""
+                    : responseHeaders.getFirst("x-request-id");
+            log.warn("OpenAI Image API call failed: status={}, requestId={}, details={}",
+                    exception.getStatusCode().value(),
+                    requestId,
+                    summarizeError(exception.getResponseBodyAsString()));
+            throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
+                    "OpenAI 코디 이미지 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
         } catch (RestClientException exception) {
             log.warn("OpenAI Image API call failed: {}", exception.getClass().getSimpleName());
             throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
@@ -68,6 +80,16 @@ public class OpenAiStylingImageClient implements StylingImageClient {
             throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
                     "AI 코디 이미지를 처리하지 못했습니다.");
         }
+    }
+
+    private String summarizeError(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return "empty response";
+        }
+        String normalized = responseBody.replaceAll("\\s+", " ").trim();
+        return normalized.length() <= 700
+                ? normalized
+                : normalized.substring(0, 700);
     }
 
     private List<ReferenceImage> downloadReferences(StylingImageInput input) {
