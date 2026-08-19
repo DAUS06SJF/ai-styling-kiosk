@@ -416,9 +416,8 @@ function App() {
               >
                 <div className="look-number">{String(index + 1).padStart(2, "0")}</div>
                 <div className="look-preview">
-                  <img src={look.image} alt={`${look.name} 미리보기`} />
+                  <img src={look.image} alt={`코디 ${index + 1} 미리보기`} />
                 </div>
-                <span>{look.name}</span>
               </button>
             ))}
           </div>
@@ -429,7 +428,6 @@ function App() {
         <div className="product-header">
           <div>
            <span>{text.selectedLook}</span>
-           <strong>{currentLook?.name || "LOOK"}</strong>
           </div>
 
           <span>
