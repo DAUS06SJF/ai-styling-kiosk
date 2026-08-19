@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    # 공용 DB 환경변수와 분리한다. create-drop 테스트가 공용 styling DB를 지우면 안 된다.
+    url: jdbc:mysql://${TEST_DB_HOST:localhost}:${TEST_DB_PORT:3306}/${TEST_DB_NAME:styling_test}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&sslMode=${TEST_DB_SSL_MODE:DISABLED}&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${TEST_DB_USERNAME:root}
+    password: ${TEST_DB_PASSWORD:}
+
+  jpa:
+    hibernate:
+      # 테스트 시작 시 스키마를 새로 만들고 끝나면 지운다.
+      ddl-auto: create-drop
+    open-in-view: false
+
+logging:
+  level:
+    org.hibernate.SQL: warn

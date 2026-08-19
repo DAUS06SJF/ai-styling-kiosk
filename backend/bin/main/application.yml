@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: ai-styling-kiosk
+
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:styling}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&sslMode=${DB_SSL_MODE:DISABLED}&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
+  jpa:
+    hibernate:
+      # 개발 단계에서는 update, 스키마가 굳으면 validate 로 변경
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+    # data.sql 을 테이블 생성 이후에 실행시키기 위해 필요
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      # data.sql 의 MCM 상품 시드 데이터를 매 기동 시 적재 (INSERT IGNORE 라 중복 없음)
+      mode: always
+      # 지정하지 않으면 Windows 기본 인코딩(CP949)으로 읽어 한글이 깨진다
+      encoding: UTF-8
+
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  # Render 등 PaaS는 PORT를 주입하고, 로컬에서는 기존 SERVER_PORT를 사용한다.
+  port: ${PORT:${SERVER_PORT:8080}}
+
+# 키오스크 / 관리자 / 모바일 3개 프론트가 붙는 주소
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,https://daus06sjf-ai-styling-kiosk-eosin.vercel.app}
+
+# OpenAI Responses API. 키는 반드시 환경변수로만 주입한다.
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-5.6-luna}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+  connect-timeout: ${OPENAI_CONNECT_TIMEOUT:3s}
+  read-timeout: ${OPENAI_READ_TIMEOUT:120s}
+  image-model: ${OPENAI_IMAGE_MODEL:gpt-image-2}
+  image-size: ${OPENAI_IMAGE_SIZE:1024x1024}
+  image-quality: ${OPENAI_IMAGE_QUALITY:medium}
+  # OpenAI 이미지 사용 한도가 0인 동안에는 서버에 포함된 스타일별 마네킹 이미지를 즉시 사용한다.
+  image-fallback-only: ${OPENAI_IMAGE_FALLBACK_ONLY:true}
+  candidate-limit: ${OPENAI_CANDIDATE_LIMIT:24}
+  recommendation-count: ${OPENAI_RECOMMENDATION_COUNT:3}
+
+# GPT Image가 반환한 PNG를 로컬에 저장하고 URL로 제공한다.
+styling:
+  images:
+    storage-directory: ${STYLING_IMAGE_STORAGE_DIRECTORY:./generated-stylings}
+    public-base-url: "${STYLING_IMAGE_PUBLIC_BASE_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}/generated-stylings}"
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    com.hackathon.styling: debug

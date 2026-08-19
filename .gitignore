@@ -11,6 +11,8 @@ backend/generated-stylings/*
 node_modules/
 dist/
 .env
+*.env
+application-local.properties
 .env.local
 
 # IDE
