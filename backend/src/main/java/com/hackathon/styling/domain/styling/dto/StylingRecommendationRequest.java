@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record StylingRecommendationRequest(
+        // 실제 매장에서는 각 옷걸이에 미리 부여한 고정 코드를 전달한다.
         @NotBlank(message = "행거 코드는 필수입니다.")
         @Size(max = 100, message = "행거 코드는 100자 이하여야 합니다.")
         String hangerCode,

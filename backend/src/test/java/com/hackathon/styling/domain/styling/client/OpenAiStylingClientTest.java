@@ -83,6 +83,15 @@ class OpenAiStylingClientTest {
                 new StylingAiInput.AiProduct(1L, "백팩", "BACKPACK", "Black", "검정 백팩");
         StylingAiInput.AiProduct candidate =
                 new StylingAiInput.AiProduct(2L, "티셔츠", "TSHIRT_TOP", "White", "흰 티셔츠");
-        return new StylingAiInput(selected, List.of(candidate), "데이트", "미니멀", List.of("검정"), 3);
+        return new StylingAiInput(
+                selected,
+                List.of(candidate),
+                "데이트",
+                "미니멀",
+                List.of("검정"),
+                3,
+                1,
+                4
+        );
     }
 }

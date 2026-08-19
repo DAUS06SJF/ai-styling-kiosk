@@ -25,9 +25,10 @@ services:
         value: gpt-5.6-luna
       - key: OPENAI_IMAGE_MODEL
         value: gpt-image-2
+      # 현재 조직의 GPT Image 입력 한도가 0이므로, 해제 전까지 서버 기본 코디 이미지로 운영한다.
+      - key: OPENAI_IMAGE_FALLBACK_ONLY
+        value: true
       - key: CORS_ALLOWED_ORIGINS
         value: https://daus06sjf-ai-styling-kiosk-eosin.vercel.app
       - key: STYLING_IMAGE_STORAGE_DIRECTORY
         value: /app/generated-stylings
-      - key: STYLING_IMAGE_PUBLIC_BASE_URL
-        value: https://daus06sjf-ai-styling-kiosk-backend.onrender.com/generated-stylings
