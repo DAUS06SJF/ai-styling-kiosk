@@ -377,6 +377,10 @@ button {
 
   flex: 1;
 
+  display: flex;
+
+  flex-direction: column;
+
   min-height: 0;
 
   padding: 8px;
@@ -443,7 +447,9 @@ button {
 
 .look-preview {
   width: 100%;
-  height: 78%;
+  height: auto;
+
+  flex: 1;
 
   overflow: hidden;
 }
@@ -489,32 +495,6 @@ button {
       #a9a39a
     );
 }
-
-/* LOOK별 색상 */
-
-.look-card > span {
-  position: absolute;
-
-  left: 0;
-  right: 0;
-
-  bottom: 5px;
-
-  text-align: center;
-
-  color: #665c4e;
-
-  font-size: 13px;
-
-  font-weight: 400;
-
-  letter-spacing: 0.3px;
-
-  line-height: 1.4;
-
-  background: rgba(255, 253, 249, 0.75);
-}
-
 
 /* =========================================================
    PRODUCT SECTION
@@ -950,12 +930,6 @@ button {
   }
 
   .look-number {
-    font-size: 6px;
-  }
-
-  .look-card > span {
-    bottom: 5px;
-
     font-size: 6px;
   }
 
