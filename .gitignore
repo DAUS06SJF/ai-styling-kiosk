@@ -1,6 +1,7 @@
 # Java / Gradle
 backend/build/
 backend/.gradle/
+.gradle-cache*/
 backend/out/
 backend/generated-stylings/*
 !backend/generated-stylings/mannequin-batch-20260816/

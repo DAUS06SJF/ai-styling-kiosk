@@ -12,7 +12,6 @@ import com.hackathon.styling.domain.styling.domain.StylingRecommendation;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationRequest;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationResponse;
 import com.hackathon.styling.domain.styling.repository.StylingRecommendationRepository;
-import com.hackathon.styling.domain.styling.storage.StylingImageStorage;
 import com.hackathon.styling.global.error.BusinessException;
 import com.hackathon.styling.global.error.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,9 +52,6 @@ class StylingRecommendationServiceTest {
     private StylingImageClient stylingImageClient;
 
     @Mock
-    private StylingImageStorage stylingImageStorage;
-
-    @Mock
     private BuiltInStylingImageFallback builtInStylingImageFallback;
 
     private StylingRecommendationService service;
@@ -69,7 +66,6 @@ class StylingRecommendationServiceTest {
                 stylingRecommendationRepository,
                 stylingAiClient,
                 stylingImageClient,
-                stylingImageStorage,
                 builtInStylingImageFallback,
                 properties
         );
@@ -78,6 +74,13 @@ class StylingRecommendationServiceTest {
     @Test
     @DisplayName("행거 상품을 고정한 서로 다른 AI 코디 네 건을 생성한다")
     void recommendStyling() {
+        AtomicLong generatedId = new AtomicLong();
+        when(stylingRecommendationRepository.saveAndFlush(any(StylingRecommendation.class)))
+                .thenAnswer(invocation -> {
+                    StylingRecommendation styling = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(styling, "id", generatedId.incrementAndGet());
+                    return styling;
+                });
         Product selected = product(1L, "Aren 백팩", "BACKPACK", "Black", "H-0001");
         Product shirt = product(2L, "로고 티셔츠", "TSHIRT_TOP", "White", "H-0002");
         Product shoes = product(3L, "레더 스니커즈", "SHOES", "Black", "H-0003");
@@ -97,13 +100,6 @@ class StylingRecommendationServiceTest {
             );
         });
         when(stylingImageClient.generate(any())).thenReturn(new byte[]{1, 2, 3});
-        when(stylingImageStorage.store(any(byte[].class)))
-                .thenReturn(
-                        "http://localhost:8080/generated-stylings/test-1.png",
-                        "http://localhost:8080/generated-stylings/test-2.png",
-                        "http://localhost:8080/generated-stylings/test-3.png",
-                        "http://localhost:8080/generated-stylings/test-4.png"
-                );
 
         StylingRecommendationResponse response = service.recommend(request(" H-0001 "));
 
@@ -113,10 +109,10 @@ class StylingRecommendationServiceTest {
         assertThat(response.preferredColors()).containsExactly("검정", "흰색");
         assertThat(response.recommendations()).hasSize(1);
         assertThat(response.recommendations().get(0).product().getId()).isEqualTo(5L);
-        assertThat(response.kodi()).isEqualTo("http://localhost:8080/generated-stylings/test-4.png");
+        assertThat(response.kodi()).isEqualTo("/api/styling/recommendations/4/image");
         assertThat(response.kodiSelected()).isNull();
-        verify(stylingRecommendationRepository, times(4)).save(any(StylingRecommendation.class));
-        verify(stylingImageStorage, times(4)).store(any(byte[].class));
+        verify(stylingRecommendationRepository, times(4))
+                .saveAndFlush(any(StylingRecommendation.class));
 
         ArgumentCaptor<StylingAiInput> captor = ArgumentCaptor.forClass(StylingAiInput.class);
         verify(stylingAiClient, times(4)).generate(captor.capture());
@@ -175,7 +171,7 @@ class StylingRecommendationServiceTest {
                 List.of("검정", "흰색"),
                 "모던 모노크롬 룩",
                 "화이트 상의로 대비를 주세요.",
-                "http://localhost:8080/generated-stylings/saved.png"
+                "/api/styling/recommendations/10/image"
         );
         styling.addItem(shirt, "검정 백팩과 선명한 대비를 만듭니다.", 1);
         ReflectionTestUtils.setField(styling, "id", 10L);
@@ -186,7 +182,7 @@ class StylingRecommendationServiceTest {
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.lookName()).isEqualTo("모던 모노크롬 룩");
-        assertThat(response.kodi()).endsWith("saved.png");
+        assertThat(response.kodi()).isEqualTo("/api/styling/recommendations/10/image");
         assertThat(response.recommendations()).hasSize(1);
         assertThat(response.recommendations().get(0).product().getId()).isEqualTo(2L);
     }
@@ -212,7 +208,7 @@ class StylingRecommendationServiceTest {
                 List.of("검정"),
                 "미니멀 룩",
                 "색을 단순하게 맞추세요.",
-                "http://localhost:8080/generated-stylings/minimal.png"
+                "/api/styling/recommendations/20/image"
         );
         ReflectionTestUtils.setField(styling, "id", 20L);
         when(stylingRecommendationRepository.findByMoodIgnoreCaseOrderByIdDesc(
@@ -223,7 +219,7 @@ class StylingRecommendationServiceTest {
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).id()).isEqualTo(20L);
-        assertThat(responses.get(0).kodi()).endsWith("minimal.png");
+        assertThat(responses.get(0).kodi()).isEqualTo("/api/styling/recommendations/20/image");
     }
 
     @Test
@@ -237,7 +233,7 @@ class StylingRecommendationServiceTest {
                 List.of("검정", "흰색"),
                 "모던 모노크롬 룩",
                 "화이트 상의로 대비를 주세요.",
-                "http://localhost:8080/generated-stylings/saved.png"
+                "/api/styling/recommendations/10/image"
         );
         ReflectionTestUtils.setField(styling, "id", 10L);
         when(stylingRecommendationRepository.findById(10L)).thenReturn(Optional.of(styling));
@@ -246,10 +242,33 @@ class StylingRecommendationServiceTest {
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.kodiSelected())
-                .isEqualTo("http://localhost:8080/generated-stylings/saved.png");
+                .isEqualTo("/api/styling/recommendations/10/image");
         assertThat(styling.getKodiSelected())
-                .isEqualTo("http://localhost:8080/generated-stylings/saved.png");
+                .isEqualTo("/api/styling/recommendations/10/image");
         verify(stylingRecommendationRepository).flush();
+    }
+
+    @Test
+    @DisplayName("Aiven DB에 저장된 코디 이미지 바이트를 조회한다")
+    void findStoredImage() {
+        Product selected = product(1L, "Aren 백팩", "BACKPACK", "Black", "H-0001");
+        StylingRecommendation styling = new StylingRecommendation(
+                selected,
+                "데이트",
+                "미니멀",
+                List.of("검정"),
+                "모던 룩",
+                "선택 상품을 유지합니다.",
+                ""
+        );
+        ReflectionTestUtils.setField(styling, "id", 10L);
+        styling.attachGeneratedImage(new byte[]{1, 2, 3});
+        when(stylingRecommendationRepository.findById(10L)).thenReturn(Optional.of(styling));
+
+        StylingRecommendationService.StoredStylingImage image = service.findImage(10L);
+
+        assertThat(image.bytes()).containsExactly(1, 2, 3);
+        assertThat(image.contentType()).isEqualTo("image/png");
     }
 
     private StylingRecommendationRequest request(String hangerCode) {

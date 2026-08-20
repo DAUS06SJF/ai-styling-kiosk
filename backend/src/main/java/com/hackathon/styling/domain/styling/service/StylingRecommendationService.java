@@ -14,7 +14,6 @@ import com.hackathon.styling.domain.styling.domain.StylingRecommendation;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationRequest;
 import com.hackathon.styling.domain.styling.dto.StylingRecommendationResponse;
 import com.hackathon.styling.domain.styling.repository.StylingRecommendationRepository;
-import com.hackathon.styling.domain.styling.storage.StylingImageStorage;
 import com.hackathon.styling.global.error.BusinessException;
 import com.hackathon.styling.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +27,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -36,12 +37,36 @@ public class StylingRecommendationService {
 
     private static final int DESCRIPTION_LIMIT = 240;
     private static final int LOOK_VARIANT_COUNT = 4;
+    private static final Long DEMO_ANCHOR_PRODUCT_ID = 260L;
+    private static final Pattern FALLBACK_VARIANT_PATTERN = Pattern.compile(
+            "/(?:minimal|street|vintage)-(?:0)?([1-4])(?:-v2|-consistent)?\\.png$",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Map<String, List<List<Long>>> CURATED_PRODUCT_IDS = Map.of(
+            "MINIMAL", List.of(
+                    List.of(281L, 242L, 89L, 239L),
+                    List.of(280L, 247L, 99L, 204L),
+                    List.of(282L, 243L, 125L, 205L),
+                    List.of(279L, 251L, 106L, 237L)
+            ),
+            "STREET", List.of(
+                    List.of(275L, 280L, 249L, 17L),
+                    List.of(258L, 281L, 250L, 106L),
+                    List.of(279L, 251L, 18L, 237L),
+                    List.of(300L, 280L, 252L, 214L)
+            ),
+            "VINTAGE", List.of(
+                    List.of(303L, 280L, 240L, 16L),
+                    List.of(256L, 279L, 241L, 104L),
+                    List.of(280L, 243L, 121L, 205L),
+                    List.of(282L, 247L, 125L, 204L)
+            )
+    );
 
     private final ProductRepository productRepository;
     private final StylingRecommendationRepository stylingRecommendationRepository;
     private final StylingAiClient stylingAiClient;
     private final StylingImageClient stylingImageClient;
-    private final StylingImageStorage stylingImageStorage;
     private final BuiltInStylingImageFallback builtInStylingImageFallback;
     private final OpenAiProperties properties;
 
@@ -154,7 +179,7 @@ public class StylingRecommendationService {
     ) {
         String kodi = properties.isImageFallbackOnly()
                 ? builtInStylingImageFallback.publicUrl(generatedLook.imageInput())
-                : stylingImageStorage.store(generatedLook.imageBytes());
+                : "";
         StylingAiOutput aiOutput = generatedLook.aiOutput();
         StylingRecommendation styling = new StylingRecommendation(
                 selectedProduct,
@@ -174,21 +199,27 @@ public class StylingRecommendationService {
                     index + 1
             );
         }
-        stylingRecommendationRepository.save(styling);
+        stylingRecommendationRepository.saveAndFlush(styling);
+        if (!properties.isImageFallbackOnly()) {
+            styling.attachGeneratedImage(generatedLook.imageBytes());
+        }
         return StylingRecommendationResponse.from(styling);
     }
 
     public StylingRecommendationResponse findById(Long id) {
         StylingRecommendation styling = stylingRecommendationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STYLING_NOT_FOUND));
-        return StylingRecommendationResponse.from(styling);
+        return adaptLegacyFallback(styling, resolveVariant(styling));
     }
 
     public List<StylingRecommendationResponse> findLatest(String mood, int limit) {
-        return stylingRecommendationRepository
-                .findByMoodIgnoreCaseOrderByIdDesc(mood.trim(), PageRequest.of(0, limit))
-                .stream()
-                .map(StylingRecommendationResponse::from)
+        List<StylingRecommendation> stylings = stylingRecommendationRepository
+                .findByMoodIgnoreCaseOrderByIdDesc(mood.trim(), PageRequest.of(0, limit));
+        return java.util.stream.IntStream.range(0, stylings.size())
+                .mapToObj(index -> adaptLegacyFallback(
+                        stylings.get(index),
+                        resolveVariant(stylings.get(index), stylings.size() - index)
+                ))
                 .toList();
     }
 
@@ -196,9 +227,112 @@ public class StylingRecommendationService {
     public StylingRecommendationResponse select(Long id) {
         StylingRecommendation styling = stylingRecommendationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STYLING_NOT_FOUND));
-        styling.select();
+        int variant = resolveVariant(styling);
+        if (shouldAdaptLegacyFallback(styling)) {
+            styling.select(builtInStylingImageFallback.publicUrl(styleKey(styling), variant));
+        } else {
+            styling.select();
+        }
         stylingRecommendationRepository.flush();
-        return StylingRecommendationResponse.from(styling);
+        return adaptLegacyFallback(styling, variant);
+    }
+
+    public StoredStylingImage findImage(Long id) {
+        StylingRecommendation styling = stylingRecommendationRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STYLING_NOT_FOUND));
+        byte[] imageBytes = styling.getKodiImage();
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new BusinessException(ErrorCode.STYLING_NOT_FOUND,
+                    "저장된 코디 이미지가 없습니다.");
+        }
+        String contentType = styling.getKodiImageContentType();
+        return new StoredStylingImage(
+                imageBytes.clone(),
+                contentType == null || contentType.isBlank() ? "image/png" : contentType
+        );
+    }
+
+    private StylingRecommendationResponse adaptLegacyFallback(
+            StylingRecommendation styling,
+            int variant
+    ) {
+        StylingRecommendationResponse original = StylingRecommendationResponse.from(styling);
+        if (!shouldAdaptLegacyFallback(styling)) {
+            return original;
+        }
+
+        String style = styleKey(styling);
+        List<Long> recommendedIds = CURATED_PRODUCT_IDS.get(style).get(variant - 1);
+        List<Long> allProductIds = new ArrayList<>();
+        allProductIds.add(DEMO_ANCHOR_PRODUCT_ID);
+        allProductIds.addAll(recommendedIds);
+
+        Map<Long, Product> productsById = new LinkedHashMap<>();
+        productRepository.findAllById(allProductIds)
+                .forEach(product -> productsById.put(product.getId(), product));
+        Product anchor = productsById.get(DEMO_ANCHOR_PRODUCT_ID);
+        if (anchor == null || !productsById.keySet().containsAll(recommendedIds)) {
+            return original;
+        }
+
+        String imageUrl = builtInStylingImageFallback.publicUrl(style, variant);
+        return new StylingRecommendationResponse(
+                original.id(),
+                ProductResponse.from(anchor),
+                original.occasion(),
+                original.mood(),
+                original.preferredColors(),
+                original.lookName(),
+                original.stylingTip(),
+                recommendedIds.stream()
+                        .map(productsById::get)
+                        .map(product -> new StylingRecommendationResponse.RecommendedProduct(
+                                ProductResponse.from(product),
+                                "선택한 MCM 티셔츠와 조화되는 매장 재고 상품입니다."
+                        ))
+                        .toList(),
+                imageUrl,
+                original.kodiSelected() == null ? null : imageUrl
+        );
+    }
+
+    private boolean shouldAdaptLegacyFallback(StylingRecommendation styling) {
+        String style = styleKey(styling);
+        if (!CURATED_PRODUCT_IDS.containsKey(style)) {
+            return false;
+        }
+        String kodi = styling.getKodi();
+        return kodi != null
+                && kodi.contains("/generated-stylings/")
+                && !kodi.contains("/api/styling/recommendations/");
+    }
+
+    private int resolveVariant(StylingRecommendation styling) {
+        Matcher matcher = FALLBACK_VARIANT_PATTERN.matcher(normalize(styling.getKodi()));
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        List<StylingRecommendation> latest = stylingRecommendationRepository
+                .findByMoodIgnoreCaseOrderByIdDesc(
+                        styling.getMood(),
+                        PageRequest.of(0, LOOK_VARIANT_COUNT)
+                );
+        int index = java.util.stream.IntStream.range(0, latest.size())
+                .filter(value -> latest.get(value).getId().equals(styling.getId()))
+                .findFirst()
+                .orElse(0);
+        return Math.max(1, Math.min(LOOK_VARIANT_COUNT, latest.size() - index));
+    }
+
+    private int resolveVariant(StylingRecommendation styling, int fallbackVariant) {
+        Matcher matcher = FALLBACK_VARIANT_PATTERN.matcher(normalize(styling.getKodi()));
+        return matcher.find()
+                ? Integer.parseInt(matcher.group(1))
+                : Math.max(1, Math.min(LOOK_VARIANT_COUNT, fallbackVariant));
+    }
+
+    private String styleKey(StylingRecommendation styling) {
+        return normalize(styling.getMood()).toUpperCase(java.util.Locale.ROOT);
     }
 
     private List<StylingRecommendationResponse.RecommendedProduct> hydrateAndValidate(
@@ -312,5 +446,8 @@ public class StylingRecommendationService {
             List<Product> recommendedProducts,
             StylingImageInput imageInput
     ) {
+    }
+
+    public record StoredStylingImage(byte[] bytes, String contentType) {
     }
 }

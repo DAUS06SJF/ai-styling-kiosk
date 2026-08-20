@@ -47,9 +47,15 @@ public class BuiltInStylingImageFallback {
     public String publicUrl(StylingImageInput input) {
         String style = resolveStyle(input.mood(), input.lookName());
         int variant = Math.max(1, Math.min(4, input.variantIndex()));
+        return publicUrl(style, variant);
+    }
+
+    public String publicUrl(String style, int variant) {
+        String normalizedStyle = resolveStyle(style, "");
+        int normalizedVariant = Math.max(1, Math.min(4, variant));
         return stripTrailingSlash(properties.getPublicBaseUrl())
                 + "/" + FALLBACK_DIRECTORY
-                + "/" + fileName(style, variant);
+                + "/" + fileName(normalizedStyle, normalizedVariant);
     }
 
     private String resolveStyle(String mood, String lookName) {
@@ -71,10 +77,7 @@ public class BuiltInStylingImageFallback {
     }
 
     private String fileName(String style, int variant) {
-        if ("y2k".equals(style) || "luxury".equals(style)) {
-            return "%s-%02d-consistent.png".formatted(style, variant);
-        }
-        return "%s-%02d.png".formatted(style, variant);
+        return "%s-%02d-consistent.png".formatted(style, variant);
     }
 
     private BusinessException fallbackUnavailable() {

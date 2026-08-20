@@ -18,6 +18,7 @@ import java.util.Base64;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
@@ -41,7 +42,7 @@ class OpenAiStylingImageClientTest {
         Path fallbackDirectory = Files.createDirectories(
                 tempDirectory.resolve("mannequin-batch-20260816")
         );
-        Files.write(fallbackDirectory.resolve("minimal-01.png"), expectedImage);
+        Files.write(fallbackDirectory.resolve("minimal-01-consistent.png"), expectedImage);
         OpenAiStylingImageClient client = new OpenAiStylingImageClient(
                 builder.build(), properties, builtInFallback(tempDirectory)
         );
@@ -94,8 +95,8 @@ class OpenAiStylingImageClientTest {
     }
 
     @Test
-    @DisplayName("입력 이미지 한도가 0이면 일반 이미지 생성 API로 자동 전환한다")
-    void fallBackToImageGenerationWhenInputImageLimitIsUnavailable() {
+    @DisplayName("입력 이미지 한도가 0이면 동일성이 없는 일반 이미지 생성을 차단한다")
+    void rejectReferenceFreeGenerationWhenInputImageLimitIsUnavailable() {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://api.openai.com");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         OpenAiProperties properties = new OpenAiProperties();
@@ -107,10 +108,6 @@ class OpenAiStylingImageClientTest {
                 builder.build(), properties, builtInFallback(Path.of("generated-stylings"))
         );
 
-        byte[] expectedImage = "fallback-png".getBytes(StandardCharsets.UTF_8);
-        String successResponse = "{\"data\":[{\"b64_json\":\""
-                + Base64.getEncoder().encodeToString(expectedImage)
-                + "\"}]}";
         String limitResponse = """
                 {"error":{"message":"Rate limit reached for input-images per min: Limit 0, Requested 1",
                 "type":"input-images","code":"rate_limit_exceeded"}}
@@ -125,55 +122,8 @@ class OpenAiStylingImageClientTest {
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(limitResponse));
-        server.expect(once(), requestTo("https://api.openai.com/v1/images/generations"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(header("Authorization", "Bearer test-key"))
-                .andRespond(withSuccess(successResponse, MediaType.APPLICATION_JSON));
-
-        byte[] image = client.generate(input());
-
-        assertThat(image).isEqualTo(expectedImage);
-        server.verify();
-    }
-
-    @Test
-    @DisplayName("GPT Image 생성도 한도 0이면 서버 기본 코디 이미지로 전환한다")
-    void fallBackToBundledImageWhenAllGptImageCallsAreUnavailable() throws Exception {
-        RestClient.Builder builder = RestClient.builder().baseUrl("https://api.openai.com");
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        OpenAiProperties properties = new OpenAiProperties();
-        properties.setApiKey("test-key");
-        properties.setImageModel("gpt-image-2");
-        byte[] expectedImage = "bundled-fallback".getBytes(StandardCharsets.UTF_8);
-        Path fallbackDirectory = Files.createDirectories(
-                tempDirectory.resolve("mannequin-batch-20260816")
-        );
-        Files.write(fallbackDirectory.resolve("minimal-01.png"), expectedImage);
-        OpenAiStylingImageClient client = new OpenAiStylingImageClient(
-                builder.build(), properties, builtInFallback(tempDirectory)
-        );
-        String limitResponse = """
-                {"error":{"message":"Rate limit reached for input-images per min: Limit 0, Requested 1",
-                "type":"input-images","code":"rate_limit_exceeded"}}
-                """;
-        byte[] referenceImage = "fake-reference".getBytes(StandardCharsets.UTF_8);
-
-        server.expect(once(), requestTo("https://example.com/selected.png"))
-                .andRespond(withSuccess(referenceImage, MediaType.IMAGE_PNG));
-        server.expect(once(), requestTo("https://example.com/recommended.png"))
-                .andRespond(withSuccess(referenceImage, MediaType.IMAGE_PNG));
-        server.expect(once(), requestTo("https://api.openai.com/v1/images/edits"))
-                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(limitResponse));
-        server.expect(once(), requestTo("https://api.openai.com/v1/images/generations"))
-                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(limitResponse));
-
-        byte[] image = client.generate(input());
-
-        assertThat(image).isEqualTo(expectedImage);
+        assertThatThrownBy(() -> client.generate(input()))
+                .hasMessageContaining("동일성을 유지");
         server.verify();
     }
 
