@@ -10,4 +10,3 @@ https://github.com/DAUS06SJF/ai-styling-kiosk
 
 ##관리자 페이지
 https://ai-styling-kiosk-admin.vercel.app/
-
