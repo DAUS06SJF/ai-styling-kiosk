@@ -8,3 +8,6 @@
 https://github.com/DAUS06SJF/ai-styling-kiosk
 이곳에 접속하여 1080 X 1920 해상도로 확인해주시면 감사하겠습니다.
 
+##관리자 페이지
+https://ai-styling-kiosk-admin.vercel.app/
+
