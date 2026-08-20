@@ -10,6 +10,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.List;
 
 @RestController
@@ -50,6 +54,16 @@ public class StylingRecommendationController {
     @GetMapping("/recommendations/{id}")
     public ApiResponse<StylingRecommendationResponse> findById(@PathVariable Long id) {
         return ApiResponse.success(stylingRecommendationService.findById(id));
+    }
+
+    @GetMapping("/recommendations/{id}/image")
+    public ResponseEntity<byte[]> findImage(@PathVariable Long id) {
+        StylingRecommendationService.StoredStylingImage image =
+                stylingRecommendationService.findImage(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(image.contentType()))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic())
+                .body(image.bytes());
     }
 
     @PostMapping("/recommendations/{id}/select")

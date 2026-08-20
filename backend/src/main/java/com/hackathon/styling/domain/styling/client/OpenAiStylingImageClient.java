@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -38,7 +37,6 @@ public class OpenAiStylingImageClient implements StylingImageClient {
     private final OpenAiProperties properties;
     private final BuiltInStylingImageFallback builtInFallback;
     private final AtomicLong referenceEditRetryAfter = new AtomicLong(0L);
-    private final AtomicLong gptImageRetryAfter = new AtomicLong(0L);
 
     @Override
     public byte[] generate(StylingImageInput input) {
@@ -51,12 +49,8 @@ public class OpenAiStylingImageClient implements StylingImageClient {
                     "OPENAI_API_KEY 환경변수를 설정한 뒤 다시 요청해 주세요.");
         }
 
-        if (gptImageRetryAfter.get() > System.currentTimeMillis()) {
-            return builtInFallback.load(input);
-        }
-
         if (referenceEditRetryAfter.get() > System.currentTimeMillis()) {
-            return generateWithoutReferences(input);
+            throw referenceImageLimitException();
         }
 
         try {
@@ -69,9 +63,9 @@ public class OpenAiStylingImageClient implements StylingImageClient {
                 referenceEditRetryAfter.set(
                         System.currentTimeMillis() + REFERENCE_EDIT_RETRY_DELAY.toMillis()
                 );
-                log.warn("OpenAI input-image limit is unavailable; using image generation fallback for {} minutes",
+                log.warn("OpenAI input-image limit is unavailable; blocking reference-free generation for {} minutes",
                         REFERENCE_EDIT_RETRY_DELAY.toMinutes());
-                return generateWithoutReferences(input);
+                throw referenceImageLimitException();
             }
             HttpHeaders responseHeaders = exception.getResponseHeaders();
             String requestId = responseHeaders == null
@@ -103,54 +97,6 @@ public class OpenAiStylingImageClient implements StylingImageClient {
                 .retrieve()
                 .body(JsonNode.class);
         return decodeImage(response);
-    }
-
-    private byte[] generateWithoutReferences(StylingImageInput input) {
-        try {
-            JsonNode response = openAiRestClient.post()
-                    .uri("/v1/images/generations")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getApiKey())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of(
-                            "model", properties.getImageModel(),
-                            "prompt", createGenerationPrompt(input),
-                            "size", properties.getImageSize(),
-                            "quality", properties.getImageQuality(),
-                            "n", 1
-                    ))
-                    .retrieve()
-                    .body(JsonNode.class);
-            return decodeImage(response);
-        } catch (BusinessException exception) {
-            throw exception;
-        } catch (RestClientResponseException exception) {
-            if (isInputImageLimitUnavailable(exception)) {
-                gptImageRetryAfter.set(
-                        System.currentTimeMillis() + REFERENCE_EDIT_RETRY_DELAY.toMillis()
-                );
-                log.warn("OpenAI GPT Image limit is unavailable; using bundled kiosk image for {} minutes",
-                        REFERENCE_EDIT_RETRY_DELAY.toMinutes());
-                return builtInFallback.load(input);
-            }
-            HttpHeaders responseHeaders = exception.getResponseHeaders();
-            String requestId = responseHeaders == null
-                    ? ""
-                    : responseHeaders.getFirst("x-request-id");
-            log.warn("OpenAI Image generation fallback failed: status={}, requestId={}, details={}",
-                    exception.getStatusCode().value(),
-                    requestId,
-                    summarizeError(exception.getResponseBodyAsString()));
-            throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
-                    "OpenAI 코디 이미지 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-        } catch (RestClientException exception) {
-            log.warn("OpenAI Image generation fallback failed: {}", exception.getClass().getSimpleName());
-            throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
-                    "OpenAI 코디 이미지 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-        } catch (IllegalArgumentException exception) {
-            log.warn("Could not decode OpenAI image generation fallback output");
-            throw new BusinessException(ErrorCode.STYLING_GENERATION_FAILED,
-                    "AI 코디 이미지를 처리하지 못했습니다.");
-        }
     }
 
     private byte[] decodeImage(JsonNode response) {
@@ -302,29 +248,12 @@ public class OpenAiStylingImageClient implements StylingImageClient {
         return prompt.toString();
     }
 
-    private String createGenerationPrompt(StylingImageInput input) {
-        StringBuilder prompt = new StringBuilder("""
-                Create one polished, photorealistic full-body fashion styling image for a retail kiosk.
-                Dress a completely faceless, featureless full-body mannequin and keep the entire mannequin visible.
-                Use a clean neutral studio background, balanced editorial composition, and soft realistic lighting.
-                Reproduce the selected anchor product as faithfully as possible from the product details below.
-                Use only the listed companion products. Do not invent, replace, or add any garment, accessory,
-                caption, label, or watermark.
-                """);
-        prompt.append("\nLook name: ").append(input.lookName());
-        prompt.append("\nStyling direction: ").append(input.stylingTip());
-        prompt.append("\nOccasion: ").append(input.occasion());
-        prompt.append("\nMood: ").append(input.mood());
-        prompt.append("\nPreferred colors: ").append(String.join(", ", input.preferredColors()));
-        prompt.append("\nThis is distinct outfit variant ")
-                .append(input.variantIndex()).append(" of ").append(input.variantCount()).append(".");
-        appendProduct(prompt, "Selected anchor product", input.selectedProduct());
-        for (int index = 0; index < input.recommendedProducts().size(); index++) {
-            appendProduct(prompt, "Recommended product " + (index + 1), input.recommendedProducts().get(index));
-        }
-        return prompt.toString();
+    private BusinessException referenceImageLimitException() {
+        return new BusinessException(
+                ErrorCode.STYLING_GENERATION_FAILED,
+                "선택 상품의 동일성을 유지하는 AI 이미지 생성 한도가 제한되었습니다. 잠시 후 다시 시도해 주세요."
+        );
     }
-
     private void appendProduct(
             StringBuilder prompt,
             String heading,

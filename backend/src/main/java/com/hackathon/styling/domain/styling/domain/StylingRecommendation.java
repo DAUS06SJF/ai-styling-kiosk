@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -63,6 +64,14 @@ public class StylingRecommendation {
     @Column(name = "kodi_selected", length = 1000)
     private String kodiSelected;
 
+    // Render의 로컬 디스크는 재배포 시 초기화되므로 생성 이미지는 DB에도 보관한다.
+    @Lob
+    @Column(name = "kodi_image", columnDefinition = "LONGBLOB")
+    private byte[] kodiImage;
+
+    @Column(name = "kodi_image_content_type", length = 100)
+    private String kodiImageContentType;
+
     public StylingRecommendation(
             Product selectedProduct,
             String occasion,
@@ -87,6 +96,20 @@ public class StylingRecommendation {
 
     public void select() {
         kodiSelected = kodi;
+    }
+
+    public void select(String imageUrl) {
+        kodi = imageUrl;
+        kodiSelected = imageUrl;
+    }
+
+    public void attachGeneratedImage(byte[] imageBytes) {
+        if (id == null) {
+            throw new IllegalStateException("코디를 저장한 뒤 이미지를 연결해야 합니다.");
+        }
+        kodiImage = imageBytes.clone();
+        kodiImageContentType = "image/png";
+        kodi = "/api/styling/recommendations/" + id + "/image";
     }
 
     public List<String> getPreferredColorList() {
