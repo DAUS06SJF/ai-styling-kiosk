@@ -91,13 +91,10 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark">A</span><span>ATELIER<small>KIOSK ADMIN</small></span></div>
+        <div className="brand"><span className="brand-mark">A</span><span>ASK<small>KIOSK ADMIN</small></span></div>
         <nav aria-label="관리자 메뉴">
           <a className="nav-item active" href="#products"><span>◇</span>상품 관리</a>
-          <span className="nav-item disabled"><span>⌁</span>스타일 관리<small>준비 중</small></span>
-          <span className="nav-item disabled"><span>↗</span>분석 리포트<small>준비 중</small></span>
         </nav>
-        <div className="sidebar-note"><strong>행거 연동</strong><span>상품마다 고유한 행거 코드를 지정하세요.</span></div>
       </aside>
 
       <main className="main-content" id="products">

@@ -58,7 +58,7 @@ openai:
   candidate-limit: ${OPENAI_CANDIDATE_LIMIT:24}
   recommendation-count: ${OPENAI_RECOMMENDATION_COUNT:3}
 
-# GPT Image가 반환한 PNG를 로컬에 저장하고 URL로 제공한다.
+# 서버에 포함된 스타일별 데모 이미지를 정적 URL로 제공한다. 새 AI 이미지는 Aiven DB에 저장한다.
 styling:
   images:
     storage-directory: ${STYLING_IMAGE_STORAGE_DIRECTORY:./generated-stylings}
